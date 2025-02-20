@@ -1,3 +1,3 @@
-﻿namespace Kehlet.SourceGeneration;
+﻿namespace Kehlet.SourceGenerator;
 
 internal readonly record struct Unit;

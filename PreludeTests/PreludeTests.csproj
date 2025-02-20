@@ -18,9 +18,8 @@
 
     <ItemGroup>
         <Using Include="Xunit"/>
-        <Using Include="Kehlet.SourceGeneration"/>
         
-        <Compile Include="..\Kehlet.SourceGeneration.Data\*.cs" Visible="false"/>
+        <Compile Include="..\Prelude\Source\*.cs" Visible="false"/>
     </ItemGroup>
 
 </Project>

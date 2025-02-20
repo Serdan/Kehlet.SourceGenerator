@@ -1,8 +1,7 @@
-﻿using System.Collections;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace Kehlet.SourceGeneration;
+namespace Kehlet.SourceGenerator;
 
 internal readonly record struct ResultOk<T>(T Value);
 
@@ -17,8 +16,8 @@ internal readonly record struct ResultError<T>(T Error);
 /// <typeparam name="T"></typeparam>
 /// <typeparam name="TError"></typeparam>
 internal readonly struct Result<T, TError>(T value, TError error, int tag) : IEquatable<Result<T, TError>>
-    where T : struct
-    where TError : struct
+    where T : notnull
+    where TError : notnull
 {
     private readonly int tag = tag;
     private readonly T value = value;
@@ -60,29 +59,11 @@ internal readonly struct Result<T, TError>(T value, TError error, int tag) : IEq
         }
     }
 
-    public T? ValueCase
-    {
-        get
-        {
-            Validate();
-            return IsOk ? value : null;
-        }
-    }
-
-    public TError? ErrorCase
-    {
-        get
-        {
-            Validate();
-            return IsError ? error : null;
-        }
-    }
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator Result<T, TError>(ResultOk<T> result) => new(result.Value, default!, 1);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator Result<T, TError>(ResultOk<T> result) => new(result.Value, default, 1);
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static implicit operator Result<T, TError>(ResultError<TError> result) => new(default, result.Error, 2);
+    public static implicit operator Result<T, TError>(ResultError<TError> result) => new(default!, result.Error, 2);
 
     public bool Equals(Result<T, TError> other)
     {
@@ -129,17 +110,66 @@ internal static class Result
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Result<TResult, TError> Map<T, TResult, TError>(this Result<T, TError> self, Func<T, TResult> mapping)
-        where T : struct
-        where TResult : struct
-        where TError : struct =>
+        where T : notnull
+        where TResult : notnull
+        where TError : notnull =>
         self.IsOk ? Ok(mapping(self.UnsafeValue)) : Error(self.UnsafeError);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Result<TResult, TError> Bind<T, TResult, TError>(
         this Result<T, TError> self,
         Func<T, Result<TResult, TError>> binder)
-        where T : struct
-        where TResult : struct
-        where TError : struct =>
+        where T : notnull
+        where TResult : notnull
+        where TError : notnull =>
         self.IsOk ? binder(self.UnsafeValue) : Error(self.UnsafeError);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T DefaultValue<T, TError>(this Result<T, TError> self, T value)
+        where T : notnull
+        where TError : notnull =>
+        self.IsOk ? self.UnsafeValue : value;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T DefaultWith<T, TError>(this Result<T, TError> self, Func<T> defThunk)
+        where T : notnull
+        where TError : notnull =>
+        self.IsOk ? self.UnsafeValue : defThunk();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool Exists<T, TError>(this Result<T, TError> self, Func<T, bool> predicate)
+        where T : notnull
+        where TError : notnull =>
+        self.IsOk && predicate(self.UnsafeValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsOk<T, TError>(Result<T, TError> result)
+        where T : notnull
+        where TError : notnull =>
+        result.IsOk;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsError<T, TError>(Result<T, TError> result)
+        where T : notnull
+        where TError : notnull =>
+        result.IsError;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Unit Iter<T, TError>(this Result<T, TError> self, Func<T, Unit> action)
+        where T : notnull
+        where TError : notnull =>
+        self.IsOk ? action(self.UnsafeValue) : unit;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Result<T, TError2> MapError<T, TError, TError2>(this Result<T, TError> self, Func<TError, TError2> mapping)
+        where T : notnull
+        where TError : notnull
+        where TError2 : notnull =>
+        self.IsError ? Error(mapping(self.UnsafeError)) : Ok(self.UnsafeValue);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Option<T> ToOption<T, TError>(this Result<T, TError> self)
+        where T : notnull
+        where TError : notnull =>
+        self.IsOk ? Some(self.UnsafeValue) : None;
 }

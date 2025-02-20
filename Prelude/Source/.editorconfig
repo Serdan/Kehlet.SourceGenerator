@@ -1,0 +1,9 @@
+﻿[*.cs]
+resharper_replace_auto_property_with_computed_property_highlighting = none
+resharper_unused_type_global_highlighting = none
+resharper_member_can_be_private_global_highlighting = none
+resharper_unused_member_global_highlighting = none
+resharper_unused_parameter_global_highlighting = none
+resharper_replace_with_primary_constructor_parameter_highlighting = none
+resharper_redundant_using_directive_global_highlighting = none
+dotnet_diagnostic.CS0414.severity = none

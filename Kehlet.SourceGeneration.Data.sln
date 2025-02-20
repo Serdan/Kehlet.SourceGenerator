@@ -1,6 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kehlet.SourceGeneration.Data", "Kehlet.SourceGeneration.Data\Kehlet.SourceGeneration.Data.csproj", "{5256F5A4-F751-4111-A177-309E8CC86542}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prelude", "Prelude\Prelude.csproj", "{5256F5A4-F751-4111-A177-309E8CC86542}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PreludeTests", "PreludeTests\PreludeTests.csproj", "{E370B423-4FDF-4EA5-80C5-C524B1F70D96}"
 EndProject

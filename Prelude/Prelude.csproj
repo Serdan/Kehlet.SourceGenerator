@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Home>$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))</Home>
+
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>disable</Nullable>
+        <DevelopmentDependency>true</DevelopmentDependency>
+        <RootNamespace>Kehlet.SourceGenerator</RootNamespace>
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageOutputPath>../artifacts</PackageOutputPath>
+
+        <IsPackable>true</IsPackable>
+        <PackageId>Kehlet.SourceGenerator.Prelude</PackageId>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <NoDefaultExcludes>true</NoDefaultExcludes> <!-- Include .editorconfig in package, so users don't get warnings/errors on prelude code. -->
+        <Version>1.1.2</Version>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>readme.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <PackageOutputPath>$(Home)\Nuget</PackageOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Meziantou.Polyfill" Version="1.0.42">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Update="Source\**\*.cs" Pack="true" PackagePath="contentFiles\cs\netstandard2.0"/>
+        <Content Include="Prelude.props" Pack="true" PackagePath="build\Kehlet.SourceGenerator.Prelude.props"/>
+        <Content Include="readme.md" Pack="true" PackagePath=""/>
+    </ItemGroup>
+
+</Project>

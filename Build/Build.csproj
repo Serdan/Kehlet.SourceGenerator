@@ -1,0 +1,36 @@
+﻿<Project>
+    <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk"/>
+
+    <PropertyGroup>
+        <HomeDir>$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))</HomeDir>
+        
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <PackageOutputPath>../artifacts</PackageOutputPath>
+        <IsPackable>true</IsPackable>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+
+        <PackageId>Kehlet.SourceGenerator.Build</PackageId>
+        <Version>1.0.1</Version>
+        <Authors>Anders Kehlet</Authors>
+        <Description>Reasonable defaults for source generators.</Description>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <DevelopmentDependency>true</DevelopmentDependency>
+        <PackageReadmeFile>readme.md</PackageReadmeFile>
+        <PackageTags>build</PackageTags>
+    </PropertyGroup>
+    
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <PackageOutputPath>$(HomeDir)\Nuget</PackageOutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="readme.md" Pack="true" PackagePath=""/>
+        <None Include="build\*" Pack="true" PackagePath="build\"/>
+    </ItemGroup>
+
+    <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk"/>
+    <Target Name="Build"/>
+</Project>

@@ -65,6 +65,12 @@ internal readonly struct Result<T, TError>(T value, TError error, int tag) : IEq
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Result<T, TError>(ResultError<TError> result) => new(default!, result.Error, 2);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator Result<T, TError>(T value) => new(value, default!, 1);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static implicit operator Result<T, TError>(TError error) => new(default!, error, 2);
+
     public bool Equals(Result<T, TError> other)
     {
         Validate();

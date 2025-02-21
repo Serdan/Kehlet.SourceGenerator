@@ -5,24 +5,33 @@
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        
+        <DevelopmentDependency>true</DevelopmentDependency>
         <RootNamespace>Kehlet.SourceGenerator</RootNamespace>
         <NoWarn>$(NoWarn);NU5128</NoWarn>
-        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+        <PackageOutputPath>../artifacts</PackageOutputPath>
+
         <IsPackable>true</IsPackable>
+        <PackageId>Kehlet.SourceGenerator.Prelude</PackageId>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <NoDefaultExcludes>true</NoDefaultExcludes>
+        <Version>1.0.5</Version>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageReadmeFile>readme.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="IsExternalInit" Version="1.0.3">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.10.0" PrivateAssets="all"/>
+        <PackageReference Include="IsExternalInit" Version="1.0.3">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
-    
+
     <ItemGroup>
-        <Content Include="Source/*" PackagePath="contentFiles\cs\netstandard2.0"/>
+        <Compile Update="Source\*.cs" Pack="true" PackagePath="contentFiles\cs\netstandard2.0"/>
+        <Content Include="Prelude.props" Pack="true" PackagePath="build\Kehlet.SourceGenerator.Prelude.props"/>
+        <Content Include="readme.md" Pack="true" PackagePath=""/>
     </ItemGroup>
 
 </Project>

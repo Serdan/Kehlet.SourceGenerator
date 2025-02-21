@@ -32,6 +32,8 @@ internal readonly struct Option<T>(T value) : IEquatable<Option<T>>
     public override int GetHashCode() => IsSome ? value.GetHashCode() : 0;
 
     public static implicit operator Option<T>(OptionNone _) => default;
+
+    public static implicit operator Option<T>(T value) => new(value);
 }
 
 internal static class Option
@@ -90,7 +92,7 @@ internal static class Option
         value is not null ? Some(value.Value) : None;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Option<T> OfObject<T>(T? value) where T : class => 
+    public static Option<T> OfObject<T>(T? value) where T : class =>
         value is not null ? Some(value) : None;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -103,5 +105,9 @@ internal static class Option
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T? ToNullable<T>(this Option<T> self) where T : struct =>
+        self.IsSome ? self.UnsafeValue : null;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static T? ToObject<T>(this Option<T> self) where T : class =>
         self.IsSome ? self.UnsafeValue : null;
 }

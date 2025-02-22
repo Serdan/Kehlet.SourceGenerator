@@ -1,4 +1,6 @@
 using System.Collections.Immutable;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace PreludeTests;
 
@@ -10,6 +12,14 @@ enum TestEnum : ulong
 
 public class UnitTest1
 {
+    private const string ClassDeclaration = "public class MyType;";
+    private const string StructDeclaration = "public struct MyType;";
+    private const string RecordDeclaration = "public record MyType;";
+    private const string RecordClassDeclaration = "public record class MyType;";
+    private const string RecordStructDeclaration = "public record struct MyType;";
+    private const string InterfaceDeclaration = "public interface MyType;";
+    private const string TargetClass = "public static partial class MyType<T>;";
+
     [Fact]
     public void ImmutableArrayEqualityInOption()
     {
@@ -32,7 +42,7 @@ public class UnitTest1
     public void GetEnumMember()
     {
         var a = EnumHelper.GetMember<TestEnum, ulong>(1ul).UnsafeValue;
-        
+
         Assert.Equal(TestEnum.First, a);
     }
 
@@ -43,8 +53,8 @@ public class UnitTest1
         {
             return 5;
         }
-        
-        
+
+
         Result<int, string> GetError()
         {
             return "error";
@@ -52,8 +62,29 @@ public class UnitTest1
 
         var value = GetValue();
         var error = GetError();
-        
+
         Assert.Equal(Ok(5), value);
         Assert.Equal(Error("error"), error);
+    }
+
+    [Fact]
+    public void DeclarationKind()
+    {
+        Assert.Equal("class", GetSyntaxNode(ClassDeclaration).GetKeyword());
+        Assert.Equal("struct", GetSyntaxNode(StructDeclaration).GetKeyword());
+        Assert.Equal("record", GetSyntaxNode(RecordDeclaration).GetKeyword());
+        Assert.Equal("record class", GetSyntaxNode(RecordClassDeclaration).GetKeyword());
+        Assert.Equal("record struct", GetSyntaxNode(RecordStructDeclaration).GetKeyword());
+        Assert.Equal("interface", GetSyntaxNode(InterfaceDeclaration).GetKeyword());
+    }
+
+    private static TypeDeclarationSyntax GetSyntaxNode(string source) => (TypeDeclarationSyntax) CSharpSyntaxTree.ParseText(source).GetRoot().ChildNodes().First();
+
+    [Fact]
+    public void TypeBaseDataString()
+    {
+        var node = GetSyntaxNode(TargetClass);
+        var str = TypeBaseData.From(node).ToString();
+        Assert.Equal("public static partial class MyType<T>", str);
     }
 }

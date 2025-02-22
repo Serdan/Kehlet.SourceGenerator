@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 // ReSharper disable InvalidXmlDocComment
@@ -43,7 +44,7 @@ internal static class SyntaxTarget
     public static bool Enum(SyntaxNode node, CancellationToken _) => node is EnumDeclarationSyntax;
 
     /// <summary>
-    /// <see cref="TypeDeclarationSyntax"/>: Matches any type, excluding enum. Includes interfaces, clases and structs.
+    /// <see cref="TypeDeclarationSyntax"/>: Matches any type, excluding enum. Includes interfaces, classes, structs and records.
     /// </summary>
     /// <param name="node">The syntax node to test</param>
     /// <returns>True if match</returns>

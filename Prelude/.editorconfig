@@ -10,3 +10,5 @@ resharper_replace_with_primary_constructor_parameter_highlighting = none
 resharper_redundant_using_directive_global_highlighting = none
 dotnet_diagnostic.CS0414.severity = none
 resharper_inconsistent_naming_highlighting = none
+resharper_not_accessed_positional_property_global_highlighting = none
+resharper_not_accessed_field_global_highlighting = none

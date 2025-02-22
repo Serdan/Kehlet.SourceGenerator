@@ -80,7 +80,8 @@ public class UnitTest1
         Assert.Equal("interface", GetSyntaxNode(InterfaceDeclaration).GetKeyword());
     }
 
-    private static TypeDeclarationSyntax GetSyntaxNode(string source) => (TypeDeclarationSyntax) CSharpSyntaxTree.ParseText(source).GetRoot().ChildNodes().First();
+    private static TypeDeclarationSyntax GetSyntaxNode(string source) =>
+        (TypeDeclarationSyntax) CSharpSyntaxTree.ParseText(source).GetRoot().ChildNodes().First();
 
     [Fact]
     public void TypeBaseDataString()
@@ -88,5 +89,25 @@ public class UnitTest1
         var node = GetSyntaxNode(TargetClass);
         var str = TypeBaseData.From(node).ToString();
         Assert.Equal("public static partial class MyType<T>", str);
+    }
+
+    [Fact]
+    public void GenericComparer()
+    {
+        var c = Equality<int>.ArrayComparer;
+        var a = ImmutableArray.Create([1, 2, 3, 4]);
+        var b = ImmutableArray.Create([1, 2, 3, 4]);
+
+        Assert.True(c.Equals(a, b));
+    }
+
+    [Fact]
+    public void ObjectComparer()
+    {
+        var c = Equality.ArrayComparer;
+        var a = ImmutableArray.Create<object>([1, 2, 3, 4]);
+        var b = ImmutableArray.Create<object>([1, 2, 3, 4]);
+
+        Assert.True(c.Equals(a, b));
     }
 }

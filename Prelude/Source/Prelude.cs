@@ -23,11 +23,9 @@ internal static class Prelude
     }
 
     public static Unit Ignore<T>(this T self) => unit;
-
-    public static readonly ObjectImmutableArraySequenceEqualityComparer SafeArrayComparer = new();
 }
 
-public static class Equality
+internal static class Equality
 {
     /// <summary>
     /// Pseudo-deep equality. Will use structural equality if <typeparamref name="T"/> implements <see cref="IStructuralEquatable"/>
@@ -42,4 +40,11 @@ public static class Equality
         typeof(IStructuralEquatable).IsAssignableFrom(typeof(T))
             ? StructuralComparisons.StructuralEqualityComparer.Equals(x, y)
             : EqualityComparer<T>.Default.Equals(x, y);
+
+    public static readonly IEqualityComparer<ImmutableArray<object>> ArrayComparer = new ObjectImmutableArraySequenceEqualityComparer();
+}
+
+internal static class Equality<T>
+{
+    public static readonly IEqualityComparer<ImmutableArray<T>> ArrayComparer = new ImmutableArraySequenceEqualityComparer<T>();
 }

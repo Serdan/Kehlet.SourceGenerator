@@ -2,7 +2,7 @@
 
 namespace Kehlet.SourceGenerator;
 
-public static class TypeDeclarationSyntaxExtensions
+internal static class TypeDeclarationSyntaxExtensions
 {
     /// <summary>
     /// Get the declaration keyword as a string (class, struct, interface, record, record class, record struct)

@@ -2,7 +2,7 @@
 
 namespace Kehlet.SourceGenerator;
 
-public static class NamedTypeSymbolExtensions
+internal static class NamedTypeSymbolExtensions
 {
     public static string? GetContainingNamespace(this INamedTypeSymbol? self) =>
         self?.ContainingNamespace.ToDisplayString(

@@ -2,7 +2,7 @@
 
 namespace Kehlet.SourceGenerator;
 
-public static class LocationExtensions
+internal static class LocationExtensions
 {
     /// <summary>
     /// <see cref="Location"/>s may hold references to the <see cref="SyntaxTree"/>. This method creates a new <see cref="Location"/> with only cacheable data.
@@ -11,4 +11,7 @@ public static class LocationExtensions
     /// <returns></returns>
     public static Location ToCacheable(this Location location) =>
         Location.Create(location.SourceTree?.FilePath ?? string.Empty, location.SourceSpan, location.GetLineSpan().Span);
+
+    public static SafeLocation ToSafeLocation(this Location location) => 
+        SafeLocation.From(location);
 }

@@ -2,7 +2,7 @@
 
 namespace Kehlet.SourceGenerator.Source;
 
-public class IndentedStringBuilder(StringBuilder builder, string tabString)
+internal class IndentedStringBuilder(StringBuilder builder, string tabString)
 {
     private readonly StringBuilder builder = builder;
     private int indent;
@@ -25,7 +25,7 @@ public class IndentedStringBuilder(StringBuilder builder, string tabString)
         set => indent = Math.Max(0, value);
     }
 
-    private void AppendTabs()
+    private IndentedStringBuilder AppendTabs()
     {
         if (tabsPending)
         {
@@ -36,27 +36,32 @@ public class IndentedStringBuilder(StringBuilder builder, string tabString)
 
             tabsPending = false;
         }
+
+        return this;
     }
 
-    public void Append(string value)
+    public IndentedStringBuilder Append(string value)
     {
         AppendTabs();
         builder.Append(value);
+        return this;
     }
 
-    public void Append(string format, params object[] args)
+    public IndentedStringBuilder Append(string format, params object[] args)
     {
         AppendTabs();
         builder.AppendFormat(format, args);
+        return this;
     }
 
-    public void AppendLine()
+    public IndentedStringBuilder AppendLine()
     {
         builder.AppendLine();
         tabsPending = true;
+        return this;
     }
 
-    public void AppendLine(string value)
+    public IndentedStringBuilder AppendLine(string value)
     {
         if (string.IsNullOrEmpty(value))
         {
@@ -68,13 +73,16 @@ public class IndentedStringBuilder(StringBuilder builder, string tabString)
             builder.AppendLine(value);
             tabsPending = true;
         }
+
+        return this;
     }
 
-    public void AppendLine(string format, params object[] args)
+    public IndentedStringBuilder AppendLine(string format, params object[] args)
     {
         AppendTabs();
         builder.AppendFormat(format, args);
         builder.AppendLine();
         tabsPending = true;
+        return this;
     }
 }

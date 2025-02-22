@@ -2,6 +2,7 @@
 global using static Kehlet.SourceGenerator.Prelude;
 using System.Collections;
 using System.Collections.Immutable;
+using Kehlet.SourceGenerator.Source;
 
 namespace Kehlet.SourceGenerator;
 
@@ -22,6 +23,8 @@ internal static class Prelude
     }
 
     public static Unit Ignore<T>(this T self) => unit;
+
+    public static readonly ObjectImmutableArraySequenceEqualityComparer SafeArrayComparer = new();
 }
 
 public static class Equality

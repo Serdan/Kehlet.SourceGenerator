@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -87,7 +88,5 @@ public class UnitTest1
         var node = GetSyntaxNode(TargetClass);
         var str = TypeBaseData.From(node).ToString();
         Assert.Equal("public static partial class MyType<T>", str);
-
-        Location a = SafeLocation.From(Location.None);
     }
 }

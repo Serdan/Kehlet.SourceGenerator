@@ -4,7 +4,7 @@ namespace Kehlet.SourceGenerator;
 
 public static class NamedTypeSymbolExtensions
 {
-    public static string GetContainingNamespace(this INamedTypeSymbol? self) =>
+    public static string? GetContainingNamespace(this INamedTypeSymbol? self) =>
         self?.ContainingNamespace.ToDisplayString(
-            SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted)) ?? "";
+            SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
 }

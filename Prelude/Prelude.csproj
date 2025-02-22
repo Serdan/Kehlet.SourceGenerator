@@ -15,7 +15,7 @@
         <PackageId>Kehlet.SourceGenerator.Prelude</PackageId>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <NoDefaultExcludes>true</NoDefaultExcludes>
-        <Version>1.0.7</Version>
+        <Version>1.0.8</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageReadmeFile>readme.md</PackageReadmeFile>
     </PropertyGroup>

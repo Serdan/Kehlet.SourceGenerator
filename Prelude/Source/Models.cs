@@ -7,8 +7,11 @@ namespace Kehlet.SourceGenerator;
 /// <summary>
 /// Cacheable base data for a C# type.
 /// </summary>
+/// <param name="Modifiers"></param>
 /// <param name="Keyword"></param>
 /// <param name="Identifier"></param>
+/// <param name="TypeParameters"></param>
+/// <param name="Arity"></param>
 internal record TypeBaseData(string Modifiers, string Keyword, string Identifier, string TypeParameters, int Arity)
 {
     public override string ToString() => $"{Modifiers} {Keyword} {Identifier}{TypeParameters}";
@@ -20,15 +23,20 @@ internal record TypeBaseData(string Modifiers, string Keyword, string Identifier
 /// <summary>
 /// Cacheable data for a C# type. This is sufficient to create a valid partial declaration.
 /// </summary>
+/// <param name="Modifiers"></param>
+/// <param name="Keyword"></param>
+/// <param name="Identifier"></param>
+/// <param name="TypeParameters"></param>
+/// <param name="Arity"></param>
 /// <param name="Namespace"></param>
-/// <param name="BaseData"></param>
-internal record TypeData(string Namespace, TypeBaseData BaseData)
+internal record TypeData(string Modifiers, string Keyword, string Identifier, string TypeParameters, int Arity, string Namespace)
+    : TypeBaseData(Modifiers, Keyword, Identifier, TypeParameters, Arity)
 {
     public string NamespaceUsing => string.IsNullOrWhiteSpace(Namespace) ? "" : $"using {Namespace};";
 
     public string NamespaceDeclaration => string.IsNullOrWhiteSpace(Namespace) ? "" : $"namespace {Namespace};";
 
-    public string TypeDeclaration => BaseData.ToString();
+    public string TypeDeclaration => base.ToString();
 
     public string GetFileName(bool fullyQualified = false)
     {
@@ -38,31 +46,48 @@ internal record TypeData(string Namespace, TypeBaseData BaseData)
             name += Namespace + ".";
         }
 
-        name += BaseData.Identifier;
-        if (BaseData.Arity > 0)
+        name += Identifier;
+        if (Arity > 0)
         {
-            name += $"`{BaseData.Arity}";
+            name += $"`{Arity}";
         }
 
         return name + ".g.cs";
     }
 
     public static TypeData From(INamedTypeSymbol symbol, TypeDeclarationSyntax syntax) =>
-        new(symbol.GetContainingNamespace(), TypeBaseData.From(syntax));
+        new(syntax.Modifiers.ToString(),
+            syntax.GetKeyword(),
+            syntax.Identifier.ValueText,
+            syntax.TypeParameterList?.ToString() ?? "",
+            syntax.Arity,
+            symbol.GetContainingNamespace() ?? "");
 }
 
 /// <summary>
 /// Cacheable wrapper for <see cref="Location"/>
 /// </summary>
 /// <param name="location"></param>
-internal class SafeLocation(Location location)
+internal class SafeLocation(Location location) : IEquatable<SafeLocation>
 {
     public Location Location { get; } = location.ToCacheable();
 
-    public static SafeLocation From(Location location) => new(location);
-
     [return: NotNullIfNotNull(nameof(location))]
     public static implicit operator Location?(SafeLocation? location) => location?.Location;
+
+    public bool Equals(SafeLocation? other) =>
+        unit switch
+        {
+            _ when other is null => false,
+            _ when ReferenceEquals(this, other) => true,
+            _ => Location.Equals(other.Location)
+        };
+
+    public override bool Equals(object? obj) => obj is SafeLocation location && Equals(location);
+
+    public override int GetHashCode() => Location.GetHashCode();
+
+    public static SafeLocation From(Location location) => new(location);
 }
 
 internal interface IDiagnostic

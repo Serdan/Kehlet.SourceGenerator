@@ -34,6 +34,10 @@ internal readonly struct Option<T>(T value) : IEquatable<Option<T>>
     public static implicit operator Option<T>(OptionNone _) => default;
 
     public static implicit operator Option<T>(T value) => new(value);
+
+    public static Option<T> Some(T value) => new(value);
+
+    public static Option<T> None => default;
 }
 
 internal static class Option
@@ -110,4 +114,20 @@ internal static class Option
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T? ToObject<T>(this Option<T> self) where T : class =>
         self.IsSome ? self.UnsafeValue : null;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Option<T> Cast<T>(this Option<object> self)
+        where T : notnull =>
+        self.IsSome ? (T) self.UnsafeValue : None;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Option<TTo> Cast<TFrom, TTo>(this Option<TFrom> self)
+        where TTo : TFrom
+        where TFrom : notnull =>
+        self.IsSome ? (TTo) self.UnsafeValue : None;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Option<T> OfType<T>(this Option<object> self) 
+        where T : notnull =>
+        self.IsSome ? (self.UnsafeValue is T t ? t : None) : None;
 }

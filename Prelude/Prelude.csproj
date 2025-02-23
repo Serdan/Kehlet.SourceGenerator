@@ -1,6 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
+        <Home>$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))</Home>
+
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>latest</LangVersion>
         <ImplicitUsings>enable</ImplicitUsings>
@@ -8,16 +10,20 @@
         <DevelopmentDependency>true</DevelopmentDependency>
         <RootNamespace>Kehlet.SourceGenerator</RootNamespace>
         <NoWarn>$(NoWarn);NU5128</NoWarn>
-        <GeneratePackageOnBuild Condition="'$(Configuration)' == 'Release'">true</GeneratePackageOnBuild>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageOutputPath>../artifacts</PackageOutputPath>
 
         <IsPackable>true</IsPackable>
         <PackageId>Kehlet.SourceGenerator.Prelude</PackageId>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <NoDefaultExcludes>true</NoDefaultExcludes>
-        <Version>1.1.1</Version>
+        <Version>1.1.15</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageReadmeFile>readme.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
+        <PackageOutputPath>$(Home)\Nuget</PackageOutputPath>
     </PropertyGroup>
 
     <ItemGroup>

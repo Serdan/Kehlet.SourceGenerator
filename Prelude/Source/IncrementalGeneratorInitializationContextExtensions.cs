@@ -1,8 +1,10 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Kehlet.SourceGenerator;
 
-public static class IncrementalGeneratorInitializationContextExtensions
+internal static class IncrementalGeneratorInitializationContextExtensions
 {
     /// <summary>
     /// Creates an <see cref="IncrementalValuesProvider{T}"/> that can provide a transform over all <see
@@ -27,4 +29,10 @@ public static class IncrementalGeneratorInitializationContextExtensions
         Func<SyntaxNode, CancellationToken, bool> predicate,
         Func<GeneratorAttributeSyntaxContext, CancellationToken, T> transform) =>
         self.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedMetadataName, predicate, transform);
+
+    public static Unit RegisterStaticType<T>(this IncrementalGeneratorInitializationContext self, string source)
+    {
+        self.RegisterPostInitializationOutput(ctx => ctx.AddSource(typeof(T).FullName + ".g.cs", SourceText.From(source, Encoding.UTF8)));
+        return unit;
+    }
 }

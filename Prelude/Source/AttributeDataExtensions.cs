@@ -9,27 +9,29 @@ internal static class AttributeDataExtensions
             ? Some(SafeLocation.From(location))
             : None;
 
-    public static Option<TEnum> GetFirstArgumentAsEnum<TEnum>(this AttributeData? attribute) where TEnum : struct, Enum =>
-        attribute is { ConstructorArguments: [{ Value: int value }, ..] }
+    public static Option<TEnum> GetArgumentAsEnum<TEnum>(this AttributeData? attribute, int argumentIndex = 0)
+        where TEnum : struct, Enum =>
+        attribute is { ConstructorArguments: var args } && args.Length > argumentIndex && args[argumentIndex] is { Value: int value }
             ? EnumHelper.GetMember<TEnum>(value)
             : None;
 
-    public static Option<TEnum> GetFirstArgumentAsEnum<TEnum, TUnderlyingType>(this AttributeData? attribute)
+    public static Option<TEnum> GetArgumentAsEnum<TEnum, TUnderlyingType>(this AttributeData? attribute, int argumentIndex = 0)
         where TEnum : struct, Enum
         where TUnderlyingType : unmanaged =>
-        attribute is { ConstructorArguments: [{ Value: TUnderlyingType value }, ..] }
+        attribute is { ConstructorArguments: var args } && args.Length > argumentIndex && args[argumentIndex] is { Value: TUnderlyingType value }
             ? EnumHelper<TEnum, TUnderlyingType>.GetMember(value)
             : None;
 
-    public static Option<TEnum> GetNamedArgumentAsEnum<TEnum>(this AttributeData? attribute, string name) where TEnum : struct, Enum =>
-        attribute?.NamedArguments.FirstOrDefault(x => x.Key == name) is { Value.Value: int value }
+    public static Option<TEnum> GetNamedArgumentAsEnum<TEnum>(this AttributeData? attribute, string parameterName)
+        where TEnum : struct, Enum =>
+        attribute?.NamedArguments.FirstOrDefault(x => x.Key == parameterName) is { Value.Value: int value }
             ? EnumHelper.GetMember<TEnum>(value)
             : None;
 
-    public static Option<TEnum> GetNamedArgumentAsEnum<TEnum, TUnderlyingType>(this AttributeData? attribute, string name)
+    public static Option<TEnum> GetNamedArgumentAsEnum<TEnum, TUnderlyingType>(this AttributeData? attribute, string parameterName)
         where TEnum : struct, Enum
         where TUnderlyingType : unmanaged =>
-        attribute?.NamedArguments.FirstOrDefault(x => x.Key == name) is { Value.Value: TUnderlyingType value }
+        attribute?.NamedArguments.FirstOrDefault(x => x.Key == parameterName) is { Value.Value: TUnderlyingType value }
             ? EnumHelper<TEnum, TUnderlyingType>.GetMember(value)
             : None;
 }

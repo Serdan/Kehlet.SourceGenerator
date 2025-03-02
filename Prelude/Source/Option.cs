@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace Kehlet.SourceGenerator;
 
@@ -62,7 +63,41 @@ internal static class Option
         self.IsSome ? binder(self.UnsafeValue) : None;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static T DefaultValue<T>(this Option<T> self, T value) where T : notnull =>
+    public static Option<TResult> Select<TSource, TResult>(this Option<TSource> self, Func<TSource, TResult> selector)
+        where TSource : notnull
+        where TResult : notnull =>
+        self.Map(selector);
+
+    public static Option<TResult> SelectMany<TSource, TMiddle, TResult>(
+        this Option<TSource> self,
+        Func<TSource, Option<TMiddle>> middleSelector,
+        Func<TSource, TMiddle, TResult> resultSelector)
+        where TSource : notnull
+        where TMiddle : notnull
+        where TResult : notnull
+    {
+        if (self.IsNone)
+        {
+            return None;
+        }
+
+        var middle = middleSelector(self.UnsafeValue);
+        if (middle.IsNone)
+        {
+            return None;
+        }
+
+        return resultSelector(self.UnsafeValue, middle.UnsafeValue);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Option<TSource> Where<TSource>(this Option<TSource> self, Func<TSource, bool> predicate)
+        where TSource : notnull =>
+        self.IsSome && predicate(self.UnsafeValue) ? self : None;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    [return: NotNullIfNotNull(nameof(value))]
+    public static T? DefaultValue<T>(this Option<T> self, T? value) where T : notnull =>
         self.IsSome ? self.UnsafeValue : value;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -127,7 +162,7 @@ internal static class Option
         self.IsSome ? (TTo) self.UnsafeValue : None;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Option<T> OfType<T>(this Option<object> self) 
+    public static Option<T> OfType<T>(this Option<object> self)
         where T : notnull =>
         self.IsSome ? (self.UnsafeValue is T t ? t : None) : None;
 }

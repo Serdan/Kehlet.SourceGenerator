@@ -1,11 +1,9 @@
 <Project>
     <PropertyGroup>
-        <IsPackable>true</IsPackable>
         <Nullable>enable</Nullable>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <ImplicitUsings>true</ImplicitUsings>
         <NoWarn>$(NoWarn);NU5128</NoWarn>
-        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IsRoslynComponent>true</IsRoslynComponent>
         <DevelopmentDependency>true</DevelopmentDependency>
@@ -14,7 +12,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <CompilerVisibleProperty Include="AvoidCycleErrorOnSelfReference" />
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 </Project>

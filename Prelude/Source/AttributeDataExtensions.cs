@@ -1,20 +1,13 @@
 ﻿using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 
-namespace Kehlet.SourceGenerator.Source;
+namespace Kehlet.SourceGenerator;
 
 internal static class AttributeDataExtensions
 {
-    public static Option<SafeLocation> GetLocation(this AttributeData attribute) =>
-        attribute.ApplicationSyntaxReference?.GetSyntax().GetLocation() is { } location
-            ? Some(SafeLocation.From(location))
-            : None;
-
     public static Option<TEnum> GetArgumentAsEnum<TEnum>(this AttributeData? attribute, int argumentIndex = 0)
         where TEnum : struct, Enum =>
-        attribute is { ConstructorArguments: var args } && args.Length > argumentIndex && args[argumentIndex] is { Value: int value }
-            ? EnumHelper.GetMember<TEnum>(value)
-            : None;
+        GetArgumentAsEnum<TEnum, int>(attribute, argumentIndex);
 
     public static Option<TEnum> GetArgumentAsEnum<TEnum, TUnderlyingType>(this AttributeData? attribute, int argumentIndex = 0)
         where TEnum : struct, Enum
@@ -25,9 +18,7 @@ internal static class AttributeDataExtensions
 
     public static Option<TEnum> GetNamedArgumentAsEnum<TEnum>(this AttributeData? attribute, string propertyName)
         where TEnum : struct, Enum =>
-        attribute?.NamedArguments.FirstOrDefault(x => x.Key == propertyName) is { Value.Value: int value }
-            ? EnumHelper.GetMember<TEnum>(value)
-            : None;
+        GetNamedArgumentAsEnum<TEnum, int>(attribute, propertyName);
 
     public static Option<TEnum> GetNamedArgumentAsEnum<TEnum, TUnderlyingType>(this AttributeData? attribute, string propertyName)
         where TEnum : struct, Enum
@@ -42,6 +33,65 @@ internal static class AttributeDataExtensions
             ? Some(value)
             : None;
 
+    /// <summary>
+    /// Returns false if the property has been passed a value that is not in the enum, otherwise true.
+    /// Does not account for flags.
+    /// </summary>
+    /// <param name="attribute"></param>
+    /// <param name="argumentIndex"></param>
+    /// <typeparam name="TEnum"></typeparam>
+    /// <typeparam name="TUnderlyingType"></typeparam>
+    /// <returns></returns>
+    public static bool ValidateEnumArgument<TEnum, TUnderlyingType>(this AttributeData? attribute, int argumentIndex = 0)
+        where TEnum : struct, Enum
+        where TUnderlyingType : unmanaged =>
+        // ReSharper disable once SimplifyConditionalTernaryExpression
+        attribute is { ConstructorArguments: var args } && args.Length > argumentIndex && args[argumentIndex] is { Value: TUnderlyingType value }
+            ? EnumHelper<TEnum, TUnderlyingType>.HasMember(value)
+            : true;
+
+    /// <summary>
+    /// Returns false if the property has been passed a value that is not in the enum, otherwise true.
+    /// Does not account for flags.
+    /// </summary>
+    /// <param name="attribute"></param>
+    /// <param name="argumentIndex"></param>
+    /// <typeparam name="TEnum"></typeparam>
+    /// <returns></returns>
+    public static bool ValidateEnumArgument<TEnum>(this AttributeData? attribute, int argumentIndex = 0)
+        where TEnum : struct, Enum =>
+        ValidateEnumArgument<TEnum, int>(attribute, argumentIndex);
+
+    /// <summary>
+    /// Returns false if the parameter has been passed a value that is not in the enum, otherwise true.
+    /// Does not account for flags.
+    /// </summary>
+    /// <param name="attribute"></param>
+    /// <param name="propertyName">Name of the named argument</param>
+    /// <typeparam name="TEnum">The enum type</typeparam>
+    /// <typeparam name="TUnderlyingType">The underlying type of TEnum</typeparam>
+    /// <returns></returns>
+    public static bool ValidateNamedEnumArgument<TEnum, TUnderlyingType>(this AttributeData? attribute, string propertyName)
+        where TEnum : struct, Enum
+        where TUnderlyingType : unmanaged =>
+        // ReSharper disable once SimplifyConditionalTernaryExpression
+        attribute?.NamedArguments.FirstOrDefault(pair => pair.Key == propertyName) is { Value.Value: TUnderlyingType value }
+            ? EnumHelper<TEnum, TUnderlyingType>.HasMember(value)
+            : true;
+
+    /// <summary>
+    /// Returns false if the parameter has been passed a value that is not in the enum, otherwise true.
+    /// Does not account for flags.
+    /// </summary>
+    /// <param name="attribute"></param>
+    /// <param name="propertyName">Name of the named argument</param>
+    /// <typeparam name="TEnum">The enum type</typeparam>
+    /// <returns></returns>
+    public static bool ValidateNamedEnumArgument<TEnum>(this AttributeData? attribute, string propertyName)
+        where TEnum : struct, Enum =>
+        ValidateNamedEnumArgument<TEnum, int>(attribute, propertyName);
+
+
     public static ImmutableDictionary<string, Option<object>> GetNamedArguments(this AttributeData attribute)
     {
         static object? GetValue(TypedConstant value)
@@ -54,21 +104,12 @@ internal static class AttributeDataExtensions
             };
         }
 
-        var dict = new Dictionary<string, Option<object>>();
+        var dict = ImmutableDictionary.CreateBuilder<string, Option<object>>();
         foreach (var (key, argument) in attribute.NamedArguments)
         {
             dict[key] = Option.OfObject(GetValue(argument));
         }
 
         return dict.ToImmutableDictionary();
-    }
-}
-
-internal static class KeyValuePairExtensions
-{
-    public static void Deconstruct<TKey, TValue>(this KeyValuePair<TKey, TValue> pair, out TKey key, out TValue value)
-    {
-        key = pair.Key;
-        value = pair.Value;
     }
 }

@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Immutable;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -14,14 +14,16 @@ namespace Kehlet.SourceGenerator;
 /// <param name="Arity"></param>
 internal record TypeBaseData(string Modifiers, string Keyword, string Identifier, string TypeParameters, int Arity)
 {
-    public override string ToString() => $"{Modifiers} {Keyword} {Identifier}{TypeParameters}";
+    public string TypeDeclaration => $"{Modifiers} {Keyword} {Identifier}{TypeParameters}";
+
+    public override string ToString() => TypeDeclaration;
 
     public static TypeBaseData From(TypeDeclarationSyntax syntax) =>
         new(syntax.Modifiers.ToString(), syntax.GetKeyword(), syntax.Identifier.ValueText, syntax.TypeParameterList?.ToString() ?? "", syntax.Arity);
 }
 
 /// <summary>
-/// Cacheable data for a C# type. This is sufficient to create a valid partial declaration.
+/// Cacheable data for a C# type. This is sufficient to create a valid partial declaration for unnested types.
 /// </summary>
 /// <param name="Modifiers"></param>
 /// <param name="Keyword"></param>
@@ -32,11 +34,7 @@ internal record TypeBaseData(string Modifiers, string Keyword, string Identifier
 internal record TypeData(string Modifiers, string Keyword, string Identifier, string TypeParameters, int Arity, string Namespace)
     : TypeBaseData(Modifiers, Keyword, Identifier, TypeParameters, Arity)
 {
-    public string NamespaceUsing => string.IsNullOrWhiteSpace(Namespace) ? "" : $"using {Namespace};";
-
     public string NamespaceDeclaration => string.IsNullOrWhiteSpace(Namespace) ? "" : $"namespace {Namespace};";
-
-    public string TypeDeclaration => base.ToString();
 
     public string GetFileName(bool fullyQualified = false)
     {
@@ -61,36 +59,35 @@ internal record TypeData(string Modifiers, string Keyword, string Identifier, st
             syntax.Identifier.ValueText,
             syntax.TypeParameterList?.ToString() ?? "",
             syntax.Arity,
-            symbol.GetContainingNamespace() ?? "");
+            symbol.GetContainingNamespace());
 }
 
 /// <summary>
-/// Cacheable wrapper for <see cref="Location"/>
+/// All data required to declare a valid partial type, including namespace and parent types.
 /// </summary>
-/// <param name="location"></param>
-internal class SafeLocation(Location location) : IEquatable<SafeLocation>
+/// <param name="Type"></param>
+/// <param name="Parents"></param>
+internal record TypeFullData(TypeData Type, ImmutableArray<TypeBaseData> Parents)
 {
-    public Location Location { get; } = location.ToCacheable();
+    public static TypeFullData From(INamedTypeSymbol symbol, TypeDeclarationSyntax syntax) =>
+        new(TypeData.From(symbol, syntax), GetParents(syntax));
 
-    [return: NotNullIfNotNull(nameof(location))]
-    public static implicit operator Location?(SafeLocation? location) => location?.Location;
-
-    public bool Equals(SafeLocation? other) =>
-        unit switch
+    /// <summary>
+    /// Recursively collects every parent of passed syntax node.
+    /// </summary>
+    /// <param name="syntax">The node to get every parent type of. The passed node itself is not included.</param>
+    /// <returns>Array of every parent. Outermost first.</returns>
+    public static ImmutableArray<TypeBaseData> GetParents(TypeDeclarationSyntax syntax)
+    {
+        static ImmutableStack<TypeBaseData> Core(TypeDeclarationSyntax syntax, ImmutableStack<TypeBaseData> stack)
         {
-            _ when other is null => false,
-            _ when ReferenceEquals(this, other) => true,
-            _ => Location.Equals(other.Location)
-        };
+            return syntax.Parent switch
+            {
+                TypeDeclarationSyntax parentSyntax => Core(parentSyntax, stack.Push(TypeBaseData.From(parentSyntax))),
+                _ => [..stack]
+            };
+        }
 
-    public override bool Equals(object? obj) => obj is SafeLocation location && Equals(location);
-
-    public override int GetHashCode() => Location.GetHashCode();
-
-    public static SafeLocation From(Location location) => new(location);
-}
-
-internal interface IDiagnostic
-{
-    Unit Report(SourceProductionContext context);
+        return [..Core(syntax, ImmutableStack<TypeBaseData>.Empty)];
+    }
 }

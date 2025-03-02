@@ -1,42 +1,84 @@
-﻿using System.Text;
+﻿using System.Collections.Immutable;
+using System.Text;
 
-namespace Kehlet.SourceGenerator.Source;
+namespace Kehlet.SourceGenerator;
 
 internal interface IEmitter
 {
-    int Indent { get; set; }
+    int CurrentIndent { get; set; }
 
-    IEmitter WithIndent(int indent);
-    IEmitter WithIndent(int indent, out int previousIndent);
+    string TabString { get; }
+
+    bool TabsPending { get; }
 
     /// <summary>
-    /// Emits value
+    /// Emit pending tabs.
+    /// </summary>
+    /// <returns></returns>
+    IEmitter Tabs();
+
+    /// <summary>
+    /// Raw append. Ignores indent.
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
-    IEmitter Emit(string value);
+    IEmitter Append(string value);
 
     /// <summary>
-    /// Emits newline
+    /// Emit newline
     /// </summary>
     /// <returns></returns>
-    IEmitter Line();
+    IEmitter NewLine();
 
     /// <summary>
-    /// Emits value -> newline
+    /// Converts the value of this instance to a <see cref="String"/>.
     /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    IEmitter Line(string value);
-
-    /// <summary>
-    /// Emits value -> newline -> newline 
-    /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    IEmitter LineLine(string value);
-
+    /// <returns>A string whose value is the same as this instance.</returns>
     string ToString();
+
+    /// <summary>
+    /// Removes all characters from the current <see cref="IEmitter"/> instance.
+    /// </summary>
+    /// <returns>Empty <see cref="IEmitter"/> instance.</returns>
+    IEmitter Clear();
+}
+
+internal abstract class Emitter : IEmitter
+{
+    protected int currentIndent;
+
+    public const string DefaultTabString = "    ";
+
+    public int CurrentIndent
+    {
+        get => currentIndent;
+        set => currentIndent = Math.Max(0, value);
+    }
+
+    public virtual string TabString { get; } = DefaultTabString;
+
+    public bool TabsPending { get; protected set; }
+
+    public virtual IEmitter Tabs()
+    {
+        if (!TabsPending)
+        {
+            return this;
+        }
+
+        for (var i = 0; i < currentIndent; i++)
+        {
+            Append(TabString);
+        }
+
+        TabsPending = false;
+        return this;
+    }
+
+    public abstract IEmitter Append(string value);
+    public abstract IEmitter NewLine();
+    public abstract IEmitter Clear();
+    public abstract override string ToString();
 }
 
 /// <summary>
@@ -46,14 +88,11 @@ internal interface IEmitter
 /// </summary>
 /// <param name="builder"></param>
 /// <param name="tabString"></param>
-internal sealed class StandardEmitter(StringBuilder builder, string tabString) : IEmitter
+internal class StandardEmitter(StringBuilder builder, string tabString) : Emitter
 {
     private readonly StringBuilder builder = builder;
-    private int indent;
-    private bool tabsPending;
-    private readonly string tabString = tabString;
 
-    public const string DefaultTabString = "    ";
+    public override string TabString { get; } = tabString;
 
     public StandardEmitter() : this(new(), DefaultTabString)
     {
@@ -63,114 +102,169 @@ internal sealed class StandardEmitter(StringBuilder builder, string tabString) :
     {
     }
 
-    public int Indent
+    /// <inheritdoc />
+    public override IEmitter Append(string value)
     {
-        get => indent;
-        set => indent = Math.Max(0, value);
-    }
-
-    public IEmitter WithIndent(int indent)
-    {
-        Indent = indent;
-        return this;
-    }
-
-    public IEmitter WithIndent(int indent, out int previousIndent)
-    {
-        previousIndent = indent;
-        Indent = indent;
-        return this;
-    }
-
-    private void Tabs()
-    {
-        if (!tabsPending)
-        {
-            return;
-        }
-
-        for (var i = 0; i < indent; i++)
-        {
-            builder.Append(tabString);
-        }
-
-        tabsPending = false;
-    }
-
-    public IEmitter Emit(string value)
-    {
-        Tabs();
         builder.Append(value);
         return this;
     }
 
-    public IEmitter Line()
+    /// <inheritdoc />
+    public override IEmitter NewLine()
     {
         builder.AppendLine();
-        tabsPending = true;
+        TabsPending = true;
         return this;
     }
 
-    public IEmitter Line(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            Line();
-        }
-        else
-        {
-            Tabs();
-            builder.AppendLine(value);
-            tabsPending = true;
-        }
-
-        return this;
-    }
-
-    public IEmitter LineLine(string value) =>
-        Line(value).Line();
-
+    /// <inheritdoc />
     public override string ToString() =>
         builder.ToString();
+
+    /// <inheritdoc />
+    public override IEmitter Clear()
+    {
+        builder.Clear();
+        return this;
+    }
 }
 
 internal static class EmitterExtensions
 {
-    /// <summary>
-    /// { -> newline -> indent++
-    /// </summary>
-    /// <param name="emitter"></param>
-    /// <returns></returns>
-    public static IEmitter OpenBrace(this IEmitter emitter)
-    {
-        emitter.Line("{");
-        emitter.Indent++;
+    public static IEmitter Call(this IEmitter emitter, Func<IEmitter, IEmitter> f) => f(emitter);
 
+    public static IEmitter WithIndent(this IEmitter emitter, int indent)
+    {
+        emitter.CurrentIndent = indent;
+        return emitter;
+    }
+
+    public static IEmitter WithIndent(this IEmitter emitter, int indent, out int previousIndent)
+    {
+        previousIndent = emitter.CurrentIndent;
+        emitter.CurrentIndent = indent;
+        return emitter;
+    }
+
+    public static IEmitter Indent(this IEmitter emitter)
+    {
+        emitter.CurrentIndent++;
+        return emitter;
+    }
+
+    public static IEmitter Unindent(this IEmitter emitter)
+    {
+        emitter.CurrentIndent--;
         return emitter;
     }
 
     /// <summary>
-    /// indent-- -> } -> newline
+    /// Emit <paramref name="value"/> followed by newline.
+    /// </summary>
+    /// <param name="emitter"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static IEmitter Line(this IEmitter emitter, string value)
+    {
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            emitter.Tabs().Append(value);
+        }
+
+        return emitter.NewLine();
+    }
+
+    /// <summary>
+    /// Emit <paramref name="value"/> followed by two newlines.
+    /// </summary>
+    /// <param name="emitter"></param>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static IEmitter LineLine(this IEmitter emitter, string value) => emitter.Line(value).NewLine();
+
+    /// <summary>
+    /// { -> newline -> indent
     /// </summary>
     /// <param name="emitter"></param>
     /// <returns></returns>
-    public static IEmitter CloseBrace(this IEmitter emitter)
-    {
-        emitter.Indent--;
-        emitter.Line("}");
+    public static IEmitter OpenBrace(this IEmitter emitter) => emitter.Line("{").Indent();
 
-        return emitter;
-    }
+    /// <summary>
+    /// unindent -> } -> newline
+    /// </summary>
+    /// <param name="emitter"></param>
+    /// <returns></returns>
+    public static IEmitter CloseBrace(this IEmitter emitter) => emitter.Unindent().Line("}");
 
     /// <summary>
     /// #nullable enable -> newline -> newline
     /// </summary>
     /// <param name="emitter"></param>
     /// <returns></returns>
-    public static IEmitter NullableDirective(this IEmitter emitter)
-    {
-        emitter.LineLine("#nullable enable");
+    public static IEmitter NullableDirective(this IEmitter emitter) => emitter.LineLine("#nullable enable");
 
-        return emitter;
+    /// <summary>
+    /// Emit type.
+    /// </summary>
+    /// <param name="emitter"></param>
+    /// <param name="typeEmitter"></param>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static IEmitter Type(this IEmitter emitter, ITypeEmitter typeEmitter, TypeBaseData data) =>
+        emitter.Call(e => typeEmitter.TypeAttributes(e, data))
+               .Line(data.TypeDeclaration)
+               .OpenBrace()
+               .Call(typeEmitter.TypeBody)
+               .CloseBrace();
+
+    /// <summary>
+    /// Emit nested types.
+    /// </summary>
+    /// <param name="emitter"></param>
+    /// <param name="typeEmitter"></param>
+    /// <param name="innerType"></param>
+    /// <param name="parents"></param>
+    /// <returns></returns>
+    public static IEmitter NestingTypes(this IEmitter emitter, ITypeEmitter typeEmitter, TypeBaseData innerType, ImmutableStack<TypeBaseData> parents)
+    {
+        if (parents.IsEmpty)
+        {
+            return emitter.Type(typeEmitter, innerType);
+        }
+
+        parents = parents.Pop(out var current);
+
+        return emitter.Call(e => typeEmitter.ParentTypeAttribute(e, current))
+                      .Line(current.TypeDeclaration)
+                      .OpenBrace()
+                      .NestingTypes(typeEmitter, innerType, parents)
+                      .CloseBrace();
     }
+
+    public static IEmitter FullType(this IEmitter emitter, ITypeEmitter typeEmitter, TypeFullData data) =>
+        emitter.LineLine(data.Type.NamespaceDeclaration)
+               .NestingTypes(typeEmitter, data.Type, [..data.Parents]);
+
+    public static IEmitter File(this IEmitter emitter, ITypeEmitter typeEmitter, TypeFullData data) =>
+        emitter.NullableDirective()
+               .Call(e => typeEmitter.Usings(e, data))
+               .FullType(typeEmitter, data);
+}
+
+internal interface ITypeEmitter
+{
+    IEmitter Usings(IEmitter emitter, TypeFullData data);
+    public IEmitter TypeAttributes(IEmitter emitter, TypeBaseData typeBaseData);
+    public IEmitter ParentTypeAttribute(IEmitter emitter, TypeBaseData typeBaseData);
+    public IEmitter TypeBody(IEmitter emitter);
+}
+
+internal abstract class TypeEmitter : ITypeEmitter
+{
+    public virtual IEmitter Usings(IEmitter emitter, TypeFullData data) => emitter;
+    public virtual IEmitter TypeAttributes(IEmitter emitter, TypeBaseData typeBaseData) => emitter;
+
+    public virtual IEmitter ParentTypeAttribute(IEmitter emitter, TypeBaseData typeBaseData) => emitter;
+
+    public virtual IEmitter TypeBody(IEmitter emitter) => emitter;
 }

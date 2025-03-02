@@ -108,4 +108,23 @@ public class UnitTest1
 
         Assert.True(c.Equals(a, b));
     }
+
+    [Fact]
+    public void FileEmitter()
+    {
+        var emitter = new StandardEmitter();
+        var typeEmitter = new TestEmitter();
+
+        var data = new TypeBaseData("public", "class", "HeyClass", "", 0);
+
+        var result = emitter.Type(typeEmitter, data).ToString();
+    }
+}
+
+class TestEmitter : TypeEmitter
+{
+    public override IEmitter TypeAttributes(IEmitter emitter, TypeBaseData typeBaseData) => emitter.Line("[MethodImpl]");
+
+    public override IEmitter TypeBody(IEmitter emitter) =>
+        emitter.Line("public int Number = 42;");
 }

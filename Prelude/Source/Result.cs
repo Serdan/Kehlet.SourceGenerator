@@ -131,6 +131,72 @@ internal static class Result
         self.IsOk ? binder(self.UnsafeValue) : Error(self.UnsafeError);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Result<TResult, TError> Select<TSource, TResult, TError>(this Result<TSource, TError> self, Func<TSource, Result<TResult, TError>> selector)
+        where TSource : notnull
+        where TResult : notnull
+        where TError : notnull =>
+        self.Bind(selector);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Result<TResult, TError> Select<TSource, TResult, TError>(this Result<TSource, TError> self, Func<TSource, TResult> selector)
+        where TSource : notnull
+        where TResult : notnull
+        where TError : notnull =>
+        self.Map(selector);
+
+    public static Result<TResult, TError> SelectMany<TSource, TMiddle, TResult, TError>(
+        this Result<TSource, TError> self,
+        Func<TSource, Result<TMiddle, TError>> firstSelector,
+        Func<TSource, TMiddle, Result<TResult, TError>> resultSelector)
+        where TSource : notnull
+        where TMiddle : notnull
+        where TResult : notnull
+        where TError : notnull
+    {
+        if (self.IsError)
+        {
+            return self.UnsafeError;
+        }
+
+        var middle = firstSelector(self.UnsafeValue);
+        if (middle.IsError)
+        {
+            return middle.UnsafeError;
+        }
+
+        return resultSelector(self.UnsafeValue, middle.UnsafeValue);
+    }
+
+    public static Result<TResult, TError> SelectMany<TSource, TMiddle, TResult, TError>(
+        this Result<TSource, TError> self,
+        Func<TSource, Result<TMiddle, TError>> firstSelector,
+        Func<TSource, TMiddle, TResult> resultSelector)
+        where TSource : notnull
+        where TMiddle : notnull
+        where TResult : notnull
+        where TError : notnull
+    {
+        if (self.IsError)
+        {
+            return self.UnsafeError;
+        }
+
+        var middle = firstSelector(self.UnsafeValue);
+        if (middle.IsError)
+        {
+            return middle.UnsafeError;
+        }
+
+        return resultSelector(self.UnsafeValue, middle.UnsafeValue);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Result<TSource, TError> Where<TSource, TError>(this Result<TSource, TError> self, Func<TSource, bool> predicate)
+        where TSource : notnull
+        where TError : notnull =>
+        self.IsOk && predicate(self.UnsafeValue) ? self : self.UnsafeError;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static T DefaultValue<T, TError>(this Result<T, TError> self, T value)
         where T : notnull
         where TError : notnull =>

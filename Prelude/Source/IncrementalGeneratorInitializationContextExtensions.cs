@@ -30,7 +30,12 @@ internal static class IncrementalGeneratorInitializationContextExtensions
         Func<GeneratorAttributeSyntaxContext, CancellationToken, T> transform) =>
         self.SyntaxProvider.ForAttributeWithMetadataName(fullyQualifiedMetadataName, predicate, transform);
 
-    public static Unit RegisterStaticType<T>(this IncrementalGeneratorInitializationContext self, string source)
+    public static Unit RegisterType(this IncrementalGeneratorInitializationContext self, string hintName, string text)
+    {
+        self.RegisterPostInitializationOutput(ctx => ctx.AddSource(hintName, SourceText.From(text, Encoding.UTF8)));
+        return unit;
+    }
+    public static Unit RegisterType<T>(this IncrementalGeneratorInitializationContext self, string source)
     {
         self.RegisterPostInitializationOutput(ctx => ctx.AddSource(typeof(T).FullName + ".g.cs", SourceText.From(source, Encoding.UTF8)));
         return unit;

@@ -2,7 +2,7 @@
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
-namespace Kehlet.SourceGenerator.Source;
+namespace Kehlet.SourceGenerator;
 
 internal static class SourceProductionContextExtensions
 {

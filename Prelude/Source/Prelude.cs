@@ -2,7 +2,6 @@
 global using static Kehlet.SourceGenerator.Prelude;
 using System.Collections;
 using System.Collections.Immutable;
-using Kehlet.SourceGenerator.Source;
 
 namespace Kehlet.SourceGenerator;
 
@@ -25,8 +24,6 @@ internal static class Prelude
     public static Unit Ignore<T>(this T self) => unit;
 
     public static T Identity<T>(T value) => value;
-
-    public static IEmitter Emitter { get; set; } = new StandardEmitter();
 }
 
 internal static class Equality

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Immutable;
 
-namespace Kehlet.SourceGenerator.Source;
+namespace Kehlet.SourceGenerator;
 
 // Copied from RegexGenerator source. MIT license.
 internal sealed class ObjectImmutableArraySequenceEqualityComparer : IEqualityComparer<ImmutableArray<object>>

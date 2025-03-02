@@ -24,7 +24,7 @@ internal readonly struct Option<T>(T value) : IEquatable<Option<T>>
     {
         return (IsSome, other.IsSome) switch
         {
-            (true, true) => Equality.SmartEquals(value, other.value),
+            (true, true) => EqualityComparer<T>.Default.Equals(value, other.value),
             (false, false) => true,
             _ => false
         };
@@ -106,7 +106,7 @@ internal static class Option
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool Contains<T>(this Option<T> self, T item) where T : notnull =>
-        self.IsSome && Equality.SmartEquals(self.UnsafeValue, item);
+        self.IsSome && self.UnsafeValue.Equals(item);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool Exists<T>(this Option<T> self, Func<T, bool> predicate) where T : notnull =>

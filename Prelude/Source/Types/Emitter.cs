@@ -268,3 +268,52 @@ internal abstract class TypeEmitter : ITypeEmitter
 
     public virtual IEmitter TypeBody(IEmitter emitter) => emitter;
 }
+
+internal abstract class TypeVisitor
+{
+    public abstract IEmitter Emitter { get; }
+
+    public virtual void VisitTypeFullData(TypeFullData data)
+    {
+        VisitStartFile();
+        VisitUsings(data);
+        VisitNamespace(data.Type);
+        VisitTypeParent(data.Type, [..data.Parents.AsSpan()]);
+    }
+
+    public virtual void VisitStartFile() => Emitter.NullableDirective();
+
+    public virtual void VisitUsings(TypeFullData data) { }
+
+    public virtual void VisitNamespace(TypeData data) => Emitter.Line(data.NamespaceDeclaration);
+
+    public virtual void VisitTypeParent(TypeBaseData innerType, ImmutableStack<TypeBaseData> parents)
+    {
+        if (parents.IsEmpty)
+        {
+            VisitType(innerType);
+            return;
+        }
+
+        parents = parents.Pop(out var current);
+        VisitParentTypeAttributes(current);
+        VisitParentTypeDeclaration(current);
+        Emitter.OpenBrace();
+        VisitTypeParent(innerType, parents);
+        Emitter.CloseBrace();
+    }
+
+    public virtual void VisitParentTypeDeclaration(TypeBaseData typeBaseData) => Emitter.Line(typeBaseData.TypeDeclaration);
+    public virtual void VisitParentTypeAttributes(TypeBaseData typeBaseData) { }
+
+    public virtual void VisitType(TypeBaseData data)
+    {
+        VisitTypeAttributes(data);
+        VisitTypeBody(data);
+    }
+
+    public virtual void VisitTypeAttributes(TypeBaseData typeBaseData) { }
+
+
+    public virtual void VisitTypeBody(TypeBaseData typeBaseData) { }
+}

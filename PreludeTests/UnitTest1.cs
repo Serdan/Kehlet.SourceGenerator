@@ -23,8 +23,8 @@ public class UnitTest1
     [Fact]
     public void ImmutableArrayEqualityInOption()
     {
-        var a = Some(ImmutableArray.Create([1, 2, 3, 4]));
-        var b = Some(ImmutableArray.Create([1, 2, 3, 4]));
+        var a = Some(CacheArray.Create(1, 2, 3, 4));
+        var b = Some(CacheArray.Create(1, 2, 3, 4));
 
         Assert.Equal(a, b);
     }
@@ -32,8 +32,8 @@ public class UnitTest1
     [Fact]
     public void ImmutableArrayEqualityInResult()
     {
-        Result<ImmutableArray<int>, int> a = Ok(ImmutableArray.Create([1, 2, 3, 4]));
-        Result<ImmutableArray<int>, int> b = Ok(ImmutableArray.Create([1, 2, 3, 4]));
+        Result<CacheArray<int>, int> a = Ok(CacheArray.Create(1, 2, 3, 4));
+        Result<CacheArray<int>, int> b = Ok(CacheArray.Create(1, 2, 3, 4));
 
         Assert.Equal(a, b);
     }
@@ -95,16 +95,6 @@ public class UnitTest1
         var c = Equality<int>.ArrayComparer;
         var a = ImmutableArray.Create([1, 2, 3, 4]);
         var b = ImmutableArray.Create([1, 2, 3, 4]);
-
-        Assert.True(c.Equals(a, b));
-    }
-
-    [Fact]
-    public void ObjectComparer()
-    {
-        var c = Equality.ArrayComparer;
-        var a = ImmutableArray.Create<object>([1, 2, 3, 4]);
-        var b = ImmutableArray.Create<object>([1, 2, 3, 4]);
 
         Assert.True(c.Equals(a, b));
     }

@@ -71,14 +71,20 @@ internal readonly struct Result<T, TError>(T value, TError error, int tag) : IEq
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static implicit operator Result<T, TError>(TError error) => new(default!, error, 2);
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Result<T, TError> Ok(T value) => new(value, default!, 1);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Result<T, TError> Error(TError error) => new(default!, error, 2);
+
     public bool Equals(Result<T, TError> other)
     {
         Validate();
         other.Validate();
         return (IsOk, other.IsOk) switch
         {
-            (true, true) => Equality.SmartEquals(value, other.value),
-            (false, false) => Equality.SmartEquals(error, other.error),
+            (true, true) => EqualityComparer<T>.Default.Equals(value, other.value),
+            (false, false) => EqualityComparer<TError>.Default.Equals(error, other.error),
             _ => false
         };
     }
@@ -95,13 +101,16 @@ internal readonly struct Result<T, TError>(T value, TError error, int tag) : IEq
         return IsOk ? value.GetHashCode() : error.GetHashCode();
     }
 
+    public static bool operator ==(Result<T, TError> x, Result<T, TError> y) => x.Equals(y);
+    public static bool operator !=(Result<T, TError> x, Result<T, TError> y) => !(x == y);
+
     [Conditional("DEBUG")]
     private void Validate()
     {
         if (tag is 0)
         {
             throw new InvalidOperationException(
-                "Result is invalid. Was defaulted rather than constructed by Ok() or Error()");
+                "Result instance is invalid. Was defaulted rather than constructed by Ok() or Error()");
         }
     }
 }

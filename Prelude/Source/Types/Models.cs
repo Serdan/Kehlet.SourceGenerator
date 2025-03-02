@@ -90,4 +90,10 @@ internal record TypeFullData(TypeData Type, ImmutableArray<TypeBaseData> Parents
 
         return [..Core(syntax, ImmutableStack<TypeBaseData>.Empty)];
     }
+
+    public Unit Accept(TypeVisitor visitor)
+    {
+        visitor.VisitTypeFullData(this);
+        return unit;
+    }
 }

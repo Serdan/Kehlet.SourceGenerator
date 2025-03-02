@@ -76,3 +76,50 @@ internal sealed class ImmutableArraySequenceEqualityComparer<T> : IEqualityCompa
         return hash;
     }
 }
+
+internal sealed class ImmutableStackSequenceEqualityComparer<T> : IEqualityComparer<ImmutableStack<T>>
+{
+    public bool Equals(ImmutableStack<T> x, ImmutableStack<T> y)
+    {
+        if (x.IsEmpty && y.IsEmpty)
+        {
+            return true;
+        }
+
+        if (x.IsEmpty || y.IsEmpty)
+        {
+            return false;
+        }
+
+        var xEnumerator = x.GetEnumerator();
+        var yEnumerator = y.GetEnumerator();
+        while (true)
+        {
+            var xNext = xEnumerator.MoveNext();
+            var yNext = yEnumerator.MoveNext();
+            switch (xNext, yNext)
+            {
+                case (true, true):
+                    if (xEnumerator.Current?.Equals(yEnumerator.Current) ?? yEnumerator.Current is not null)
+                    {
+                        return false;
+                    }
+
+                    break;
+                case (true, false) or (false, true): return false;
+                case (false, false): return true;
+            }
+        }
+    }
+
+    public int GetHashCode(ImmutableStack<T> obj)
+    {
+        var hash = 0;
+        foreach (var item in obj)
+        {
+            hash = (hash, item).GetHashCode();
+        }
+
+        return hash;
+    }
+}

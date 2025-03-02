@@ -17,7 +17,7 @@
         <PackageId>Kehlet.SourceGenerator.Prelude</PackageId>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <NoDefaultExcludes>true</NoDefaultExcludes>
-        <Version>1.1.29</Version>
+        <Version>1.1.30</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageReadmeFile>readme.md</PackageReadmeFile>
     </PropertyGroup>
@@ -35,7 +35,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Update="Source\*.cs" Pack="true" PackagePath="contentFiles\cs\netstandard2.0"/>
+        <Compile Update="Source\**\*.cs" Pack="true" PackagePath="contentFiles\cs\netstandard2.0"/>
         <Content Include="Prelude.props" Pack="true" PackagePath="build\Kehlet.SourceGenerator.Prelude.props"/>
         <Content Include="readme.md" Pack="true" PackagePath=""/>
     </ItemGroup>

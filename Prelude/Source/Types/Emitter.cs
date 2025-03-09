@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Text;
 
 namespace Kehlet.SourceGenerator;
@@ -31,7 +33,7 @@ internal interface IEmitter
     IEmitter NewLine();
 
     /// <summary>
-    /// Converts the value of this instance to a <see cref="String"/>.
+    /// Converts the value of this instance to a <see cref="string"/>.
     /// </summary>
     /// <returns>A string whose value is the same as this instance.</returns>
     string ToString();
@@ -212,7 +214,7 @@ internal static class EmitterExtensions
     /// <returns></returns>
     public static IEmitter Type(this IEmitter emitter, ITypeEmitter typeEmitter, TypeBaseData data) =>
         emitter.Call(e => typeEmitter.TypeAttributes(e, data))
-               .Line(data.TypeDeclaration)
+               .Line(data.GetTypeDeclaration())
                .OpenBrace()
                .Call(typeEmitter.TypeBody)
                .CloseBrace();
@@ -235,14 +237,14 @@ internal static class EmitterExtensions
         parents = parents.Pop(out var current);
 
         return emitter.Call(e => typeEmitter.ParentTypeAttribute(e, current))
-                      .Line(current.TypeDeclaration)
+                      .Line(current.GetTypeDeclaration())
                       .OpenBrace()
                       .NestingTypes(typeEmitter, innerType, parents)
                       .CloseBrace();
     }
 
     public static IEmitter FullType(this IEmitter emitter, ITypeEmitter typeEmitter, TypeFullData data) =>
-        emitter.LineLine(data.Type.NamespaceDeclaration)
+        emitter.LineLine(data.Type.GetNamespaceDeclaration())
                .NestingTypes(typeEmitter, data.Type, [..data.Parents]);
 
     public static IEmitter File(this IEmitter emitter, ITypeEmitter typeEmitter, TypeFullData data) =>
@@ -271,49 +273,61 @@ internal abstract class TypeEmitter : ITypeEmitter
 
 internal abstract class TypeVisitor
 {
-    public abstract IEmitter Emitter { get; }
+    public virtual IEmitter Emitter { get; } = new StandardEmitter();
 
-    public virtual void VisitTypeFullData(TypeFullData data)
+    public virtual void EmitTypeFullData(TypeFullData data)
     {
-        VisitStartFile();
-        VisitUsings(data);
-        VisitNamespace(data.Type);
-        VisitTypeParent(data.Type, [..data.Parents.AsSpan()]);
+        EmitFileStart();
+        EmitUsings(data);
+        EmitNamespace(data.Type);
+        EmitTypeParent(data.Type, data.Parents, 0);
+        EmitFileEnd();
     }
 
-    public virtual void VisitStartFile() => Emitter.NullableDirective();
+    public virtual void EmitFileStart() => Emitter.NullableDirective();
 
-    public virtual void VisitUsings(TypeFullData data) { }
+    public virtual void EmitFileEnd() { }
 
-    public virtual void VisitNamespace(TypeData data) => Emitter.Line(data.NamespaceDeclaration);
+    public virtual void EmitUsings(TypeFullData data) { }
 
-    public virtual void VisitTypeParent(TypeBaseData innerType, ImmutableStack<TypeBaseData> parents)
+    public virtual void EmitNamespace(TypeData data) => Emitter.Line(data.GetNamespaceDeclaration());
+
+    public virtual void EmitTypeParent(TypeBaseData innerType, CacheStack<TypeBaseData> parents, int depth)
     {
+        Debug.Assert(depth < 100, "Please don't.");
         if (parents.IsEmpty)
         {
-            VisitType(innerType);
+            EmitType(innerType);
             return;
         }
 
         parents = parents.Pop(out var current);
-        VisitParentTypeAttributes(current);
-        VisitParentTypeDeclaration(current);
+        EmitParentTypeAttributes(current, depth);
+        EmitParentTypeDeclaration(current, depth);
         Emitter.OpenBrace();
-        VisitTypeParent(innerType, parents);
+        EmitParentTypeBody(current, depth);
+        EmitTypeParent(innerType, parents, depth + 1);
         Emitter.CloseBrace();
     }
 
-    public virtual void VisitParentTypeDeclaration(TypeBaseData typeBaseData) => Emitter.Line(typeBaseData.TypeDeclaration);
-    public virtual void VisitParentTypeAttributes(TypeBaseData typeBaseData) { }
+    public virtual void EmitParentTypeAttributes(TypeBaseData typeBaseData, int depth) { }
 
-    public virtual void VisitType(TypeBaseData data)
+    public virtual void EmitParentTypeDeclaration(TypeBaseData typeBaseData, int depth) => Emitter.Line(typeBaseData.GetTypeDeclaration());
+
+    public virtual void EmitParentTypeBody(TypeBaseData typeBaseData, int depth) { }
+
+    public virtual void EmitType(TypeBaseData data)
     {
-        VisitTypeAttributes(data);
-        VisitTypeBody(data);
+        EmitTypeAttributes(data);
+        EmitTypeDeclaration(data);
+        Emitter.OpenBrace();
+        EmitTypeBody(data);
+        Emitter.CloseBrace();
     }
 
-    public virtual void VisitTypeAttributes(TypeBaseData typeBaseData) { }
+    public virtual void EmitTypeAttributes(TypeBaseData typeBaseData) { }
 
+    public virtual void EmitTypeDeclaration(TypeBaseData typeBaseData) => Emitter.Line(typeBaseData.GetTypeDeclaration());
 
-    public virtual void VisitTypeBody(TypeBaseData typeBaseData) { }
+    public virtual void EmitTypeBody(TypeBaseData typeBaseData) { }
 }

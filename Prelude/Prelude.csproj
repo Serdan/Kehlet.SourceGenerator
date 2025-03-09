@@ -5,8 +5,8 @@
 
         <TargetFramework>netstandard2.0</TargetFramework>
         <LangVersion>latest</LangVersion>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
+        <ImplicitUsings>disable</ImplicitUsings>
+        <Nullable>disable</Nullable>
         <DevelopmentDependency>true</DevelopmentDependency>
         <RootNamespace>Kehlet.SourceGenerator</RootNamespace>
         <NoWarn>$(NoWarn);NU5128</NoWarn>
@@ -16,8 +16,8 @@
         <IsPackable>true</IsPackable>
         <PackageId>Kehlet.SourceGenerator.Prelude</PackageId>
         <IncludeBuildOutput>false</IncludeBuildOutput>
-        <NoDefaultExcludes>true</NoDefaultExcludes>
-        <Version>1.1.30</Version>
+        <NoDefaultExcludes>true</NoDefaultExcludes> <!-- Include .editorconfig in package, so users don't get warnings/errors on prelude code. -->
+        <Version>1.1.31</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageReadmeFile>readme.md</PackageReadmeFile>
     </PropertyGroup>

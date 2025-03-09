@@ -1,4 +1,6 @@
-﻿using System.Collections.Immutable;
+﻿#nullable enable
+using System.Collections.Generic;
+using System.Collections.Immutable;
 
 namespace Kehlet.SourceGenerator;
 
@@ -79,8 +81,18 @@ internal sealed class ImmutableArraySequenceEqualityComparer<T> : IEqualityCompa
 
 internal sealed class ImmutableStackSequenceEqualityComparer<T> : IEqualityComparer<ImmutableStack<T>>
 {
-    public bool Equals(ImmutableStack<T> x, ImmutableStack<T> y)
+    public bool Equals(ImmutableStack<T>? x, ImmutableStack<T>? y)
     {
+        if (x is null && y is null)
+        {
+            return true;
+        }
+
+        if (x is null || y is null)
+        {
+            return false;
+        }
+        
         if (x.IsEmpty && y.IsEmpty)
         {
             return true;

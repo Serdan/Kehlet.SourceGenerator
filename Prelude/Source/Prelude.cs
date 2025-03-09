@@ -1,6 +1,9 @@
-﻿global using Kehlet.SourceGenerator;
+﻿#if !NO_GLOBAL_USINGS
+global using Kehlet.SourceGenerator;
 global using static Kehlet.SourceGenerator.Prelude;
-using System.Collections.Immutable;
+global using static Kehlet.SourceGenerator.PreludeExtensions;
+#endif
+using System;
 
 namespace Kehlet.SourceGenerator;
 
@@ -20,7 +23,15 @@ internal static class Prelude
         return unit;
     }
 
-    public static Unit Ignore<T>(this T self) => unit;
+    public static Unit Ignore<T>(T self) => unit;
 
     public static T Identity<T>(T value) => value;
+}
+
+internal static class PreludeExtensions
+{
+    public static Option<T> Some<T>(this T value) where T : notnull => new(value);
+    public static ResultOk<T> Ok<T>(this T value) => new(value);
+    public static ResultError<T> Error<T>(this T error) => new(error);
+    public static Unit Ignore<T>(this T self) => unit;
 }

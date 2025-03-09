@@ -1,10 +1,27 @@
-﻿using System.Collections;
+﻿#nullable enable
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Linq;
+using System.Runtime.CompilerServices;
 
 namespace Kehlet.SourceGenerator;
 
+/// <summary>
+/// Cacheable wrapper type for <see cref="ImmutableArray{T}"/>.
+/// </summary>
+/// <param name="array">The array to wrap.</param>
+/// <typeparam name="T">The type of array items.</typeparam>
+[DebuggerDisplay("[{DebuggerString}]")]
+[CollectionBuilder(typeof(CacheArray), nameof(CacheArray.Create))]
 public readonly struct CacheArray<T>(ImmutableArray<T> array) : IEquatable<CacheArray<T>>, IImmutableList<T>
 {
+    public CacheArray() : this([]) { }
+
+    private string DebuggerString => string.Join(", ", [..array.Take(3), ".."]);
+
     private readonly ImmutableArray<T> array = array;
 
     public ImmutableArray<T>.Enumerator GetEnumerator() => array.GetEnumerator();
@@ -58,4 +75,9 @@ public readonly struct CacheArray<T>(ImmutableArray<T> array) : IEquatable<Cache
 internal static class CacheArray
 {
     public static CacheArray<T> Create<T>(params ReadOnlySpan<T> items) => new(ImmutableArray.Create(items));
+    public static CacheArray<T> Create<T>(ImmutableArray<T> array) => new(array);
+    public static CacheArray<T> Create<T>(T[] array) => new(ImmutableArray.Create(array));
+
+    public static string Concat<T>(this CacheArray<T> array, string separator) => string.Join(separator, array);
+    public static string Concat<T>(this CacheArray<T> array, string separator, Func<T, string> selector) => string.Join(separator, array.Select(selector));
 }

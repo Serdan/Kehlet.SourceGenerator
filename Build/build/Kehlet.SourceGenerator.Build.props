@@ -1,17 +1,14 @@
 <Project>
     <PropertyGroup>
         <Nullable>enable</Nullable>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
-        <ImplicitUsings>true</ImplicitUsings>
+        <ImplicitUsings>enable</ImplicitUsings>
         <NoWarn>$(NoWarn);NU5128</NoWarn>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+        
+        <IncludeBuildOutput>false</IncludeBuildOutput>
         <IsRoslynComponent>true</IsRoslynComponent>
         <DevelopmentDependency>true</DevelopmentDependency>
 
         <HomeDir>$([System.Environment]::GetFolderPath(SpecialFolder.UserProfile))</HomeDir>
     </PropertyGroup>
-
-    <ItemGroup>
-        <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
-    </ItemGroup>
 </Project>

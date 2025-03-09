@@ -105,7 +105,14 @@ public class UnitTest1
         var emitter = new StandardEmitter();
         var typeEmitter = new TestEmitter();
 
-        var data = new TypeBaseData("public", "class", "HeyClass", "", 0);
+        var data = new TypeBaseData
+        {
+            Modifiers = "public",
+            Keyword = "record",
+            Identifier = "MyRecord",
+            TypeParameters = "",
+            Arity = 0
+        };
 
         var result = emitter.Type(typeEmitter, data).ToString();
     }

@@ -1,4 +1,7 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿#nullable enable
+using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Kehlet.SourceGenerator;
@@ -165,4 +168,7 @@ internal static class Option
     public static Option<T> OfType<T>(this Option<object> self)
         where T : notnull =>
         self.IsSome ? (self.UnsafeValue is T t ? t : None) : None;
+
+    public static Option<T> ToOption<T>(this T? value) where T : struct => value is null ? None : Some(value.Value);
+    public static Option<T> ToOption<T>(this T? value) where T : class => value is null ? None : Some(value);
 }

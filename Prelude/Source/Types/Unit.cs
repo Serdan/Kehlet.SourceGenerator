@@ -1,4 +1,7 @@
-﻿namespace Kehlet.SourceGenerator;
+﻿#nullable enable
+using System;
+
+namespace Kehlet.SourceGenerator;
 
 internal readonly struct Unit : IEquatable<Unit>
 {

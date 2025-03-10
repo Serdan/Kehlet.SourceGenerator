@@ -144,6 +144,13 @@ internal record AccessorListDescription : SyntaxDescription
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitAccessorList(this);
 }
 
+internal abstract record BasePropertyDescription : MemberDescription
+{
+    public required Option<TypeIdentifierDescription> Type { get; init; }
+
+    public required AccessorListDescription Accessors { get; init; }
+}
+
 [DebuggerDisplay("{Identifier}")]
 internal record PropertyDescription : BasePropertyDescription
 {
@@ -177,13 +184,6 @@ internal record NamespaceDescription : MemberDescription
     public sealed override ModifierListDescription Modifiers { get; init; } = ModifierListDescription.Empty;
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitNamespace(this);
-}
-
-internal abstract record BasePropertyDescription : MemberDescription
-{
-    public required Option<TypeIdentifierDescription> Type { get; init; }
-
-    public required AccessorListDescription Accessors { get; init; }
 }
 
 [DebuggerDisplay("{Identifier}")]
@@ -228,16 +228,30 @@ internal static class SyntaxHelper
 
         return node switch
         {
-            ModuleDescription description => description with { Members = ToArray(members) },
+            ModuleDescription description    => description with { Members = ToArray(members) },
             NamespaceDescription description => description with { Members = ToArray(members) },
             NamedTypeDescription description => description with { Members = ToArray(members) },
-            _ => throw new InvalidOperationException()
+            _                                => throw new InvalidOperationException()
         };
     }
 
     public static Option<ModuleDescription> GetTargetWithContext(MemberDeclarationSyntax target)
     {
         var walker = new SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration.Context);
+        walker.Visit(target);
+        return walker.Context;
+    }
+
+    public static Option<ModuleDescription> GetTargetWithAll(MemberDeclarationSyntax target)
+    {
+        var walker = new SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration.All);
+        walker.Visit(target);
+        return walker.Context;
+    }
+
+    public static Option<ModuleDescription> GetTarget(MemberDeclarationSyntax target, SyntaxToDescriptionWalkerConfiguration configuration)
+    {
+        var walker = new SyntaxToDescriptionWalker(configuration);
         walker.Visit(target);
         return walker.Context;
     }
@@ -668,24 +682,26 @@ internal class SyntaxDescriptionWalker<TResult> : SyntaxDescriptionVisitor<TResu
 
 internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWalker<IEmitter>
 {
+    protected readonly IEmitter Emitter = emitter;
+
     public SyntaxDescriptionEmitter() : this(new StandardEmitter()) { }
 
     public override Option<IEmitter> VisitTypeIdentifier(TypeIdentifierDescription description)
     {
-        return emitter.Append(description.Identifier)
+        return Emitter.Append(description.Identifier)
                       .Append(" ")
                       .Some();
     }
 
     public override Option<IEmitter> VisitModifierList(ModifierListDescription description)
     {
-        emitter.Tabs();
+        Emitter.Tabs();
         foreach (var modifier in description.Modifiers)
         {
-            emitter.Append(modifier).Append(" ");
+            Emitter.Append(modifier).Append(" ");
         }
 
-        return emitter.Some();
+        return Emitter.Some();
     }
 
     public override Option<IEmitter> VisitTypeParameterList(TypeParameterListDescription description)
@@ -695,7 +711,7 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
             return None;
         }
 
-        return emitter
+        return Emitter
                // .Append("<")
                .Append(description.Parameters.UnsafeValue).Some();
         // .Append(">");
@@ -704,12 +720,12 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
     public override Option<IEmitter> VisitParameter(ParameterDescription description)
     {
         base.VisitParameter(description);
-        return emitter.Append(description.Identifier).Some();
+        return Emitter.Append(description.Identifier).Some();
     }
 
     public override Option<IEmitter> VisitParameterList(ParameterListDescription description)
     {
-        emitter.Append("(");
+        Emitter.Append("(");
 
         var count = description.Parameters.Count;
         for (var i = 0; i < description.Parameters.Count; i++)
@@ -718,16 +734,16 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
             Visit(parameter);
             if (i < count - 1)
             {
-                emitter.Append(", ");
+                Emitter.Append(", ");
             }
         }
 
-        return emitter.Append(")").Some();
+        return Emitter.Append(")").Some();
     }
 
     public override Option<IEmitter> VisitBracketedParameterList(BracketedParameterListDescription description)
     {
-        emitter.Append("[");
+        Emitter.Append("[");
 
         var count = description.Parameters.Count;
         for (var i = 0; i < description.Parameters.Count; i++)
@@ -736,16 +752,16 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
             Visit(parameter);
             if (i < count - 1)
             {
-                emitter.Append(", ");
+                Emitter.Append(", ");
             }
         }
 
-        return emitter.Append("]").Some();
+        return Emitter.Append("]").Some();
     }
 
     public virtual Option<IEmitter> VisitMethodBody(MethodDescription description)
     {
-        return emitter.NewLine()
+        return Emitter.NewLine()
                       .OpenBrace()
                       .CloseBrace()
                       .Some();
@@ -755,34 +771,34 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
     {
         Visit(description.Modifiers);
         Visit(description.ReturnType.DefaultValue(TypeIdentifierDescription.Error));
-        emitter.Append(description.Identifier);
+        Emitter.Append(description.Identifier);
         Visit(description.TypeParameterList);
         Visit(description.Parameters);
         VisitMethodBody(description);
 
-        return emitter.Some();
+        return Emitter.Some();
     }
 
     public override Option<IEmitter> VisitAccessor(AccessorDescription description) =>
-        emitter.Append(description.Keyword).Append(";").Some();
+        Emitter.Append(description.Keyword).Append(";").Some();
 
     public override Option<IEmitter> VisitAccessorList(AccessorListDescription description)
     {
-        emitter.Append("{ ");
+        Emitter.Append("{ ");
         foreach (var accessor in description.Accessors)
         {
             Visit(accessor);
-            emitter.Append(" ");
+            Emitter.Append(" ");
         }
 
-        return emitter.Append("}").Some();
+        return Emitter.Append("}").Some();
     }
 
     public override Option<IEmitter> VisitProperty(PropertyDescription description)
     {
         Visit(description.Modifiers);
         description.Type.Map(Visit);
-        emitter.Append(description.Identifier).Append(" ");
+        Emitter.Append(description.Identifier).Append(" ");
         return Visit(description.Accessors);
     }
 
@@ -790,49 +806,44 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
     {
         Visit(description.Modifiers);
         description.Type.Map(Visit);
-        emitter.Append("this");
+        Emitter.Append("this");
         Visit(description.Parameters);
-        emitter.Append(" ");
+        Emitter.Append(" ");
         return Visit(description.Accessors);
     }
 
     public virtual Option<IEmitter> VisitNamedTypeBody(NamedTypeDescription description)
     {
-        return emitter.Some();
+        return Emitter.Some();
     }
 
     public override Option<IEmitter> VisitNamedType(NamedTypeDescription description)
     {
         Visit(description.Modifiers);
-        emitter.Append(description.Keyword)
+        Emitter.Append(description.Keyword)
                .Append(" ")
                .Append(description.Identifier);
         Visit(description.TypeParameters);
-        emitter.NewLine()
+        Emitter.NewLine()
                .OpenBrace();
 
         VisitNamedTypeBody(description);
         foreach (var member in description.Members)
         {
-            emitter.Tabs();
             Visit(member);
-            emitter.NewLine();
         }
 
-        return emitter.CloseBrace().Some();
+        return Emitter.CloseBrace().Some();
     }
 
     public override Option<IEmitter> VisitNamespace(NamespaceDescription description)
     {
-        emitter.Tabs().Append("namespace ").Append(description.Name);
-        if (description.IsFileScoped)
+        Emitter.Tabs().Append("namespace ").Append(description.Name);
+        _ = description.IsFileScoped switch
         {
-            emitter.Append(";").NewLine();
-        }
-        else
-        {
-            emitter.NewLine().OpenBrace();
-        }
+            true  => Emitter.LineLine(";"),
+            false => Emitter.NewLine().OpenBrace()
+        };
 
         foreach (var @using in description.Usings)
         {
@@ -841,7 +852,7 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
 
         if (description.Usings.Count > 0)
         {
-            emitter.NewLine();
+            Emitter.NewLine();
         }
 
         foreach (var member in description.Members)
@@ -851,17 +862,17 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
 
         if (description.IsFileScoped is false)
         {
-            emitter.CloseBrace();
+            Emitter.CloseBrace();
         }
 
-        return emitter.Some();
+        return Emitter.Some();
     }
 
-    public override Option<IEmitter> VisitUsing(UsingDescription description) => emitter.Line(description.Text).Some();
+    public override Option<IEmitter> VisitUsing(UsingDescription description) => Emitter.Line(description.Text).Some();
 
     public override Option<IEmitter> VisitModule(ModuleDescription description)
     {
-        emitter.NullableDirective();
+        Emitter.NullableDirective();
         foreach (var @using in description.Usings)
         {
             Visit(@using);
@@ -869,17 +880,17 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
 
         if (description.Usings.Count > 0)
         {
-            emitter.NewLine();
+            Emitter.NewLine();
         }
 
         foreach (var member in description.Members)
         {
             Visit(member);
-            emitter.NewLine();
+            Emitter.NewLine();
         }
 
-        return emitter.Some();
+        return Emitter.Some();
     }
 
-    public override string ToString() => emitter.ToString();
+    public override string ToString() => Emitter.ToString();
 }

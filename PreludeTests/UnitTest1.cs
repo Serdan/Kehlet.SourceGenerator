@@ -82,14 +82,6 @@ public class UnitTest1
         (TypeDeclarationSyntax) CSharpSyntaxTree.ParseText(source).GetRoot().ChildNodes().First();
 
     [Fact]
-    public void TypeBaseDataString()
-    {
-        var node = GetSyntaxNode(TargetClass);
-        var str = TypeBaseData.From(node).ToString();
-        Assert.Equal("public static partial class MyType<T>", str);
-    }
-
-    [Fact]
     public void GenericComparer()
     {
         var c = Equality<int>.ArrayComparer;
@@ -98,30 +90,4 @@ public class UnitTest1
 
         Assert.True(c.Equals(a, b));
     }
-
-    [Fact]
-    public void FileEmitter()
-    {
-        var emitter = new StandardEmitter();
-        var typeEmitter = new TestEmitter();
-
-        var data = new TypeBaseData
-        {
-            Modifiers = "public",
-            Keyword = "record",
-            Identifier = "MyRecord",
-            TypeParameters = "",
-            Arity = 0
-        };
-
-        var result = emitter.Type(typeEmitter, data).ToString();
-    }
-}
-
-class TestEmitter : TypeEmitter
-{
-    public override IEmitter TypeAttributes(IEmitter emitter, TypeBaseData typeBaseData) => emitter.Line("[MethodImpl]");
-
-    public override IEmitter TypeBody(IEmitter emitter) =>
-        emitter.Line("public int Number = 42;");
 }

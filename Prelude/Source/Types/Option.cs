@@ -27,9 +27,9 @@ internal readonly struct Option<T>(T value) : IEquatable<Option<T>>
     {
         return (IsSome, other.IsSome) switch
         {
-            (true, true) => EqualityComparer<T>.Default.Equals(value, other.value),
+            (true, true)   => EqualityComparer<T>.Default.Equals(value, other.value),
             (false, false) => true,
-            _ => false
+            _              => false
         };
     }
 
@@ -169,6 +169,19 @@ internal static class Option
         where T : notnull =>
         self.IsSome ? (self.UnsafeValue is T t ? t : None) : None;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Option<T> ToOption<T>(this T? value) where T : struct => value is null ? None : Some(value.Value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Option<T> ToOption<T>(this T? value) where T : class => value is null ? None : Some(value);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static TResult Match<T, TResult>(this Option<T> self, Func<T, TResult> some, Func<TResult> none)
+        where T : notnull
+        where TResult : notnull =>
+        self.IsSome switch
+        {
+            true  => some(self.UnsafeValue),
+            false => none()
+        };
 }

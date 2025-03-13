@@ -1,7 +1,6 @@
 ﻿#if !NO_GLOBAL_USINGS
 global using Kehlet.SourceGenerator;
 global using static Kehlet.SourceGenerator.Prelude;
-global using static Kehlet.SourceGenerator.PreludeExtensions;
 #endif
 using System;
 

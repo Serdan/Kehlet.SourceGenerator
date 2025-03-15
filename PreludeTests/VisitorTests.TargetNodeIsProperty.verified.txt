@@ -1,0 +1,10 @@
+﻿#nullable enable
+
+using System;
+
+namespace Everything.Something;
+
+public partial class MyClass<T, U>
+{
+    public partial int Value { get; }
+}

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -205,6 +206,9 @@ internal record NamedTypeDescription : MemberDescription
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitNamedType(this);
 }
 
+/// <summary>
+/// Represents a single C# code file.
+/// </summary>
 internal record ModuleDescription : MemberDescription
 {
     public required CacheArray<UsingDescription> Usings { get; init; }
@@ -378,7 +382,7 @@ internal sealed class ContextWalker : BaseSyntaxVisitor
         return root;
     }
 
-    public Option<ModuleDescription> GetRoot(NamedTypeDescription child)
+    public Option<ModuleDescription> GetRoot(MemberDescription child)
     {
         if (module.IsNone)
         {
@@ -450,6 +454,18 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
 
     public Option<ModuleDescription> Context { get; private set; }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private SyntaxDescription UpdateContext(MemberDeclarationSyntax node, MemberDescription description)
+    {
+        if (!includeContext) return description;
+
+        includeContext = false;
+        var walker = new ContextWalker();
+        walker.Visit(node.Parent);
+        Context = walker.GetRoot(description);
+        return description;
+    }
+
     private static bool IsTypeMember(MemberDeclarationSyntax node) =>
         node is BaseMethodDeclarationSyntax or BasePropertyDeclarationSyntax;
 
@@ -491,17 +507,9 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
             return members.ToCacheArray();
         }
 
-        var type = (NamedTypeDescription) base.VisitTypeDeclaration(node)! with { Members = VisitMembers() };
+        var description = (NamedTypeDescription) base.VisitTypeDeclaration(node)! with { Members = VisitMembers() };
 
-        if (includeContext)
-        {
-            includeContext = false;
-            var walker = new ContextWalker();
-            walker.Visit(node.Parent);
-            Context = walker.GetRoot(type);
-        }
-
-        return type;
+        return UpdateContext(node, description);
     }
 
     public override SyntaxDescription? VisitMethodDeclaration(MethodDeclarationSyntax node)
@@ -511,7 +519,7 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
             return null;
         }
 
-        return new MethodDescription
+        var description = new MethodDescription
         {
             Modifiers = SyntaxHelper.ParseModifierList(node.Modifiers),
             ReturnType = (Visit(node.ReturnType) as TypeIdentifierDescription).ToOption(),
@@ -520,6 +528,8 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
             Parameters = Visit(node.ParameterList) as ParameterListDescription ?? ParameterListDescription.Empty,
             Arity = node.Arity
         };
+
+        return UpdateContext(node, description);
     }
 
     public override SyntaxDescription? VisitPropertyDeclaration(PropertyDeclarationSyntax node)
@@ -529,13 +539,15 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
             return null;
         }
 
-        return new PropertyDescription
+        var description = new PropertyDescription
         {
             Modifiers = SyntaxHelper.ParseModifierList(node.Modifiers),
             Type = (Visit(node.Type) as TypeIdentifierDescription).ToOption(),
             Identifier = node.Identifier.ValueText,
             Accessors = Visit(node.AccessorList) as AccessorListDescription ?? AccessorListDescription.Getter
         };
+
+        return UpdateContext(node, description);
     }
 
     public override SyntaxDescription? VisitIndexerDeclaration(IndexerDeclarationSyntax node)
@@ -545,13 +557,15 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
             return null;
         }
 
-        return new IndexerDescription
+        var description = new IndexerDescription
         {
             Modifiers = SyntaxHelper.ParseModifierList(node.Modifiers),
             Type = (Visit(node.Type) as TypeIdentifierDescription).ToOption(),
             Parameters = Visit(node.ParameterList) as BracketedParameterListDescription ?? BracketedParameterListDescription.Empty,
             Accessors = Visit(node.AccessorList) as AccessorListDescription ?? AccessorListDescription.Getter
         };
+
+        return UpdateContext(node, description);
     }
 }
 
@@ -799,7 +813,8 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
         Visit(description.Modifiers);
         description.Type.Map(Visit);
         Emitter.Append(description.Identifier).Append(" ");
-        return Visit(description.Accessors);
+        Visit(description.Accessors);
+        return Emitter.NewLine().Some();
     }
 
     public override Option<IEmitter> VisitIndexer(IndexerDescription description)
@@ -809,7 +824,8 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
         Emitter.Append("this");
         Visit(description.Parameters);
         Emitter.Append(" ");
-        return Visit(description.Accessors);
+        Visit(description.Accessors);
+        return Emitter.NewLine().Some();
     }
 
     public virtual Option<IEmitter> VisitNamedTypeBody(NamedTypeDescription description)
@@ -883,10 +899,15 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
             Emitter.NewLine();
         }
 
-        foreach (var member in description.Members)
+        for (var i = 0; i < description.Members.Count; i++)
         {
+            var member = description.Members[i];
             Visit(member);
-            Emitter.NewLine();
+
+            if (description.Members.Count + 1 < i)
+            {
+                Emitter.NewLine();
+            }
         }
 
         return Emitter.Some();

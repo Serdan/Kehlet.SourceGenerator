@@ -3,6 +3,10 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# Verify
+*.received.*
+*.received/
+
 # dotenv files
 .env
 

@@ -26,13 +26,54 @@ public class VisitorTests
         """;
 
     [Fact]
-    public void Test()
+    public Task TargetNodeIsType()
     {
         var tree = CSharpSyntaxTree.ParseText(Code);
-        var typeDeclaration = (TypeDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is TypeDeclarationSyntax);
+        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is TypeDeclarationSyntax);
 
-        var module = SyntaxHelper.GetTargetWithAll(typeDeclaration).UnsafeValue;
+        var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
 
         var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
+
+        return Verify(text);
+    }
+
+    [Fact]
+    public Task TargetNodeIsMethod()
+    {
+        var tree = CSharpSyntaxTree.ParseText(Code);
+        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is MethodDeclarationSyntax);
+
+        var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
+
+        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
+        
+        return Verify(text);
+    }
+
+    [Fact]
+    public Task TargetNodeIsProperty()
+    {
+        var tree = CSharpSyntaxTree.ParseText(Code);
+        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is PropertyDeclarationSyntax { Identifier.ValueText: "Value" });
+
+        var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
+
+        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
+        
+        return Verify(text);
+    }
+
+    [Fact]
+    public Task TargetNodeIsIndexer()
+    {
+        var tree = CSharpSyntaxTree.ParseText(Code);
+        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is IndexerDeclarationSyntax);
+
+        var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
+
+        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
+        
+        return Verify(text);
     }
 }

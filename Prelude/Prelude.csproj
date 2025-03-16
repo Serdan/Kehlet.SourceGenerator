@@ -17,7 +17,7 @@
         <PackageId>Kehlet.SourceGenerator.Prelude</PackageId>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <NoDefaultExcludes>true</NoDefaultExcludes> <!-- Include .editorconfig in package, so users don't get warnings/errors on prelude code. -->
-        <Version>1.1.4</Version>
+        <Version>1.2.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <PackageReadmeFile>readme.md</PackageReadmeFile>
     </PropertyGroup>

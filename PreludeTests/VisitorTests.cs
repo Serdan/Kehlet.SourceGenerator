@@ -39,6 +39,19 @@ public class VisitorTests
     }
 
     [Fact]
+    public Task TargetNodeIsNestedType()
+    {
+        var tree = CSharpSyntaxTree.ParseText(Code);
+        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().Last(x => x is TypeDeclarationSyntax);
+
+        var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
+
+        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
+
+        return Verify(text);
+    }
+
+    [Fact]
     public Task TargetNodeIsMethod()
     {
         var tree = CSharpSyntaxTree.ParseText(Code);

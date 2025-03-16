@@ -1,6 +1,8 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 using System.Threading;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -106,29 +108,21 @@ internal static class IncrementalGeneratorInitializationContextExtensions
         );
     }
 
-    /// <summary>
-    /// Helper for self.RegisterPostInitializationOutput(ctx => ctx.AddSource(hintName, SourceText.From(text, Encoding.UTF8)));
-    /// </summary>
-    /// <param name="self"></param>
-    /// <param name="hintName"></param>
-    /// <param name="text"></param>
-    /// <returns></returns>
-    public static Unit RegisterType(this IncrementalGeneratorInitializationContext self, string hintName, string text)
+    public static Unit AddSource<T>(this IncrementalGeneratorPostInitializationContext context, string text)
     {
-        self.RegisterPostInitializationOutput(ctx => ctx.AddSource(hintName, SourceText.From(text, Encoding.UTF8)));
+        context.AddSource(typeof(T).FullName! + ".g.cs", SourceText.From(text, Encoding.UTF8));
         return unit;
     }
 
-    /// <summary>
-    /// Helper for self.RegisterPostInitializationOutput(ctx => ctx.AddSource(typeof(T).FullName + ".g.cs", SourceText.From(text, Encoding.UTF8)));
-    /// </summary>
-    /// <param name="self"></param>
-    /// <param name="text"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public static Unit RegisterType<T>(this IncrementalGeneratorInitializationContext self, string text)
+    public static Unit AddSource(this IncrementalGeneratorPostInitializationContext context, string hintName, string text)
     {
-        self.RegisterPostInitializationOutput(ctx => ctx.AddSource(typeof(T).FullName + ".g.cs", SourceText.From(text, Encoding.UTF8)));
+        context.AddSource(hintName, SourceText.From(text, Encoding.UTF8));
+        return unit;
+    }
+
+    public static Unit AddSource<T>(this IncrementalGeneratorPostInitializationContext context, Stream stream)
+    {
+        context.AddSource(typeof(T).FullName! + ".g.cs", SourceText.From(stream, Encoding.UTF8));
         return unit;
     }
 

@@ -5,6 +5,8 @@ namespace PreludeTests;
 
 public class VisitorTests
 {
+    private static SyntaxDescriptionEmitter GetEmitter() => new(new StandardEmitter());
+
     private const string Code =
         """
         using System;
@@ -29,11 +31,13 @@ public class VisitorTests
     public Task TargetNodeIsType()
     {
         var tree = CSharpSyntaxTree.ParseText(Code);
-        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is TypeDeclarationSyntax);
+        var target = (MemberDeclarationSyntax)tree.GetRoot().DescendantNodes().First(x => x is TypeDeclarationSyntax);
 
         var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
 
-        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
+        var emitter = GetEmitter();
+        emitter.Visit(module);
+        var text = emitter.ToString();
 
         return Verify(text);
     }
@@ -42,11 +46,13 @@ public class VisitorTests
     public Task TargetNodeIsNestedType()
     {
         var tree = CSharpSyntaxTree.ParseText(Code);
-        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().Last(x => x is TypeDeclarationSyntax);
+        var target = (MemberDeclarationSyntax)tree.GetRoot().DescendantNodes().Last(x => x is TypeDeclarationSyntax);
 
         var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
 
-        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
+        var emitter = GetEmitter();
+        emitter.Visit(module);
+        var text = emitter.ToString();
 
         return Verify(text);
     }
@@ -55,12 +61,14 @@ public class VisitorTests
     public Task TargetNodeIsMethod()
     {
         var tree = CSharpSyntaxTree.ParseText(Code);
-        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is MethodDeclarationSyntax);
+        var target = (MemberDeclarationSyntax)tree.GetRoot().DescendantNodes().First(x => x is MethodDeclarationSyntax);
 
         var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
 
-        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
-        
+        var emitter = GetEmitter();
+        emitter.Visit(module);
+        var text = emitter.ToString();
+
         return Verify(text);
     }
 
@@ -68,12 +76,14 @@ public class VisitorTests
     public Task TargetNodeIsProperty()
     {
         var tree = CSharpSyntaxTree.ParseText(Code);
-        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is PropertyDeclarationSyntax { Identifier.ValueText: "Value" });
+        var target = (MemberDeclarationSyntax)tree.GetRoot().DescendantNodes().First(x => x is PropertyDeclarationSyntax { Identifier.ValueText: "Value" });
 
         var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
 
-        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
-        
+        var emitter = GetEmitter();
+        emitter.Visit(module);
+        var text = emitter.ToString();
+
         return Verify(text);
     }
 
@@ -81,12 +91,14 @@ public class VisitorTests
     public Task TargetNodeIsIndexer()
     {
         var tree = CSharpSyntaxTree.ParseText(Code);
-        var target = (MemberDeclarationSyntax) tree.GetRoot().DescendantNodes().First(x => x is IndexerDeclarationSyntax);
+        var target = (MemberDeclarationSyntax)tree.GetRoot().DescendantNodes().First(x => x is IndexerDeclarationSyntax);
 
         var module = SyntaxHelper.GetTargetWithAll(target).UnsafeValue;
 
-        var text = new SyntaxDescriptionEmitter(new StandardEmitter()).Visit(module).UnsafeValue.ToString();
-        
+        var emitter = GetEmitter();
+        emitter.Visit(module);
+        var text = emitter.ToString();
+
         return Verify(text);
     }
 }

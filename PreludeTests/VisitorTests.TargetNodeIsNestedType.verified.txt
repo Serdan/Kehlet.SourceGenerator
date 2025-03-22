@@ -1,0 +1,15 @@
+﻿#nullable enable
+
+using System;
+
+namespace Everything.Something;
+
+public partial class MyClass<T, U>
+{
+    public partial struct Test<A, B>
+    {
+        public partial class Innermost
+        {
+        }
+    }
+}

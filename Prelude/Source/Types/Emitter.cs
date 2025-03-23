@@ -49,13 +49,15 @@ internal abstract class Emitter : IEmitter
 
     public const string DefaultTabString = "    ";
 
+    public static IEmitter NewEmitter => new StandardEmitter();
+
     public int CurrentIndent
     {
         get => currentIndent;
         set => currentIndent = Math.Max(0, value);
     }
 
-    public virtual string TabString { get; } = DefaultTabString;
+    public virtual string TabString => DefaultTabString;
 
     public bool TabsPending { get; protected set; }
 
@@ -90,8 +92,6 @@ internal abstract class Emitter : IEmitter
 /// <param name="tabString"></param>
 internal class StandardEmitter(StringBuilder builder, string tabString) : Emitter
 {
-    private readonly StringBuilder builder = builder;
-
     public override string TabString { get; } = tabString;
 
     public StandardEmitter() : this(new(), DefaultTabString)
@@ -202,4 +202,59 @@ internal static class EmitterExtensions
     /// <param name="emitter"></param>
     /// <returns></returns>
     public static IEmitter NullableDirective(this IEmitter emitter) => emitter.LineLine("#nullable enable");
+
+    /// <summary>
+    /// Emits <paramref name="content"/> as a C# raw string literal.
+    /// Counts the quotation marks (") in <paramref name="content"/> and may cause performance issues for very large strings.
+    /// </summary>
+    /// <param name="emitter"></param>
+    /// <param name="content">Text to emit.</param>
+    /// <returns></returns>
+    public static IEmitter RawStringLiteral(this IEmitter emitter, string content)
+    {
+        int GetRawStringQuotes(string text)
+        {
+            var count = 0;
+            var currentCount = 0;
+
+            foreach (var character in text)
+            {
+                if (character is '"')
+                {
+                    currentCount++;
+                }
+                else
+                {
+                    currentCount = 1;
+                }
+
+                if (currentCount > count)
+                {
+                    count = currentCount;
+                }
+            }
+
+            return Math.Max(3, count);
+        }
+
+        return emitter.RawStringLiteral(GetRawStringQuotes(content), content);
+    }
+
+    /// <summary>
+    /// Emits <paramref name="content"/> as a C# raw string literal.
+    /// </summary>
+    /// <param name="emitter"></param>
+    /// <param name="quotesCount">Number of quotation marks (") to use for the raw string literal.</param>
+    /// <param name="content">Text to emit.</param>
+    /// <returns></returns>
+    public static IEmitter RawStringLiteral(this IEmitter emitter, int quotesCount, string content)
+    {
+        var quotes = new string('"', Math.Max(3, quotesCount));
+
+        return emitter.WithIndent(0, out var indent)
+                      .Line(quotes)
+                      .Line(content)
+                      .Line($"{quotes};")
+                      .WithIndent(indent);
+    }
 }

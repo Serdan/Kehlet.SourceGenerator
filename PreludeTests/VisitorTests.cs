@@ -5,7 +5,7 @@ namespace PreludeTests;
 
 public class VisitorTests
 {
-    private static SyntaxDescriptionEmitter GetEmitter() => new(new StandardEmitter());
+    private static SyntaxDescriptionEmitter GetEmitter() => new(new());
 
     private const string Code =
         """

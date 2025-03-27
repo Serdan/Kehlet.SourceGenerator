@@ -1,67 +1,106 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Text;
+
+using static Kehlet.SourceGenerator.Indent;
 
 namespace Kehlet.SourceGenerator;
 
-internal interface IEmitter
+internal readonly struct Indent
 {
-    int CurrentIndent { get; set; }
+    private Indent(int tag, int value)
+    {
+        this.tag = tag;
+        this.value = value;
+    }
 
-    string TabString { get; }
+    private readonly int tag;
+    private readonly int value;
 
-    bool TabsPending { get; }
+    public Emitter Apply(Emitter emitter) => tag switch
+    {
+        0 => emitter.WithIndent(emitter.CurrentIndent + value),
+        1 => emitter.WithIndent(value),
+        _ => throw new ArgumentOutOfRangeException()
+    };
 
-    /// <summary>
-    /// Emit pending tabs.
-    /// </summary>
-    /// <returns></returns>
-    IEmitter Tabs();
-
-    /// <summary>
-    /// Raw append. Ignores indent.
-    /// </summary>
-    /// <param name="value"></param>
-    /// <returns></returns>
-    IEmitter Append(string value);
-
-    /// <summary>
-    /// Emit newline
-    /// </summary>
-    /// <returns></returns>
-    IEmitter NewLine();
-
-    /// <summary>
-    /// Converts the value of this instance to a <see cref="string"/>.
-    /// </summary>
-    /// <returns>A string whose value is the same as this instance.</returns>
-    string ToString();
-
-    /// <summary>
-    /// Removes all characters from the current <see cref="IEmitter"/> instance.
-    /// </summary>
-    /// <returns>Empty <see cref="IEmitter"/> instance.</returns>
-    IEmitter Clear();
+    public static Indent Delta(int value) => new(0, value);
+    public static Indent Value(int value) => new(1, value);
+    public static Indent Increment => Delta(1);
+    public static Indent Decrement => Delta(-1);
 }
 
-internal abstract class Emitter : IEmitter
+internal readonly struct Scope
 {
+    private readonly int tag;
+    private readonly int indent;
+
+    private Scope(int tag, int indent)
+    {
+        this.tag = tag;
+        this.indent = indent;
+    }
+
+    public Emitter Apply(Emitter emitter) => tag switch
+    {
+        0 => emitter.EnterScope(indent),
+        1 => emitter.ExitScope(),
+        _ => throw new ArgumentOutOfRangeException()
+    };
+
+    public static Scope Enter(int indent) => new(0, indent);
+    public static Scope Exit() => new(1, 0);
+}
+
+internal class Emitter(StringBuilder builder)
+{
+    public Emitter() : this(new()) { }
+
     protected int currentIndent;
+    private readonly Stack<int> scopes = new();
 
     public const string DefaultTabString = "    ";
 
-    public static IEmitter NewEmitter => new StandardEmitter();
+    public static Emitter Create() => new();
 
     public int CurrentIndent
     {
         get => currentIndent;
-        set => currentIndent = Math.Max(0, value);
+        set
+        {
+            currentIndent = Math.Max(0, value);
+            TabsPending = true;
+        }
     }
 
     public virtual string TabString => DefaultTabString;
 
     public bool TabsPending { get; protected set; }
 
-    public virtual IEmitter Tabs()
+    public Emitter EnterScope(int indent)
+    {
+        scopes.Push(CurrentIndent);
+        CurrentIndent = indent;
+        return this;
+    }
+
+    public Emitter ExitScope()
+    {
+        if (scopes.Count is 0)
+        {
+            return this;
+        }
+
+        CurrentIndent = scopes.Pop();
+        return this;
+    }
+
+    /// <summary>
+    /// Emit pending tabs.
+    /// </summary>
+    /// <returns></returns>
+    public virtual Emitter Tabs()
     {
         if (!TabsPending)
         {
@@ -77,86 +116,75 @@ internal abstract class Emitter : IEmitter
         return this;
     }
 
-    public abstract IEmitter Append(string value);
-    public abstract IEmitter NewLine();
-    public abstract IEmitter Clear();
-    public abstract override string ToString();
-}
-
-/// <summary>
-/// Automatically indents when appending. Doesn't indent empty lines.
-/// <para/>
-/// Uses a <see cref="StringBuilder"/> internally.
-/// </summary>
-/// <param name="builder"></param>
-/// <param name="tabString"></param>
-internal class StandardEmitter(StringBuilder builder, string tabString) : Emitter
-{
-    public override string TabString { get; } = tabString;
-
-    public StandardEmitter() : this(new(), DefaultTabString)
-    {
-    }
-
-    public StandardEmitter(string tabString) : this(new(), tabString)
-    {
-    }
-
-    /// <inheritdoc />
-    public override IEmitter Append(string value)
+    /// <summary>
+    /// Raw append. Ignores indent.
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public virtual Emitter Append(string value)
     {
         builder.Append(value);
         return this;
     }
 
-    /// <inheritdoc />
-    public override IEmitter NewLine()
+    /// <summary>
+    /// Emit newline
+    /// </summary>
+    /// <returns></returns>
+    public virtual Emitter NewLine()
     {
         builder.AppendLine();
         TabsPending = true;
         return this;
     }
 
-    /// <inheritdoc />
-    public override string ToString() =>
-        builder.ToString();
-
-    /// <inheritdoc />
-    public override IEmitter Clear()
+    /// <summary>
+    /// Removes all characters from the current <see cref="Emitter"/> instance.
+    /// </summary>
+    /// <returns>Empty <see cref="Emitter"/> instance.</returns>
+    public virtual Emitter Clear()
     {
         builder.Clear();
         return this;
     }
+
+    public override string ToString() => builder.ToString();
+
+    public static Emitter operator *(Emitter emitter, string text) => emitter.Tabs().Append(text);
+    public static Emitter operator *(Emitter emitter, Indent indent) => indent.Apply(emitter);
+    public static Emitter operator *(Emitter emitter, Scope scope) => scope.Apply(emitter);
+    public static Emitter operator *(Emitter emitter, Func<Emitter, Emitter> f) => emitter.Call(f);
+    public static Unit operator >> (Emitter emitter, Unit _) => unit;
+    public static Emitter operator /(Emitter emitter, string text) => emitter.NewLine() * text;
+    public static Emitter operator /(Emitter emitter, Unit unit) => emitter.NewLine();
+    public static Emitter operator /(Emitter emitter, Indent indent) => emitter.NewLine() * indent;
+    public static Emitter operator /(Emitter emitter, Scope scope) => emitter.NewLine() * scope;
+    public static Emitter operator /(Emitter emitter, Func<Emitter, Emitter> f) => emitter.NewLine() * f;
+    public static Emitter operator ++(Emitter emitter) => emitter.Indent();
+    public static Emitter operator --(Emitter emitter) => emitter.Unindent();
 }
 
 internal static class EmitterExtensions
 {
-    public static IEmitter Call(this IEmitter emitter, Func<IEmitter, IEmitter> f) => f(emitter);
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Emitter Call(this Emitter emitter, Func<Emitter, Emitter> f) => f(emitter);
 
-    public static IEmitter WithIndent(this IEmitter emitter, int indent)
+    public static Emitter WithIndent(this Emitter emitter, int indent)
     {
         emitter.CurrentIndent = indent;
         return emitter;
     }
 
-    public static IEmitter WithIndent(this IEmitter emitter, int indent, out int previousIndent)
+    public static Emitter WithIndent(this Emitter emitter, int indent, out int previousIndent)
     {
         previousIndent = emitter.CurrentIndent;
         emitter.CurrentIndent = indent;
         return emitter;
     }
 
-    public static IEmitter Indent(this IEmitter emitter)
-    {
-        emitter.CurrentIndent++;
-        return emitter;
-    }
+    public static Emitter Indent(this Emitter emitter) => emitter * Increment;
 
-    public static IEmitter Unindent(this IEmitter emitter)
-    {
-        emitter.CurrentIndent--;
-        return emitter;
-    }
+    public static Emitter Unindent(this Emitter emitter) => emitter * Decrement;
 
     /// <summary>
     /// Emit <paramref name="value"/> followed by newline.
@@ -164,15 +192,12 @@ internal static class EmitterExtensions
     /// <param name="emitter"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public static IEmitter Line(this IEmitter emitter, string value)
-    {
-        if (!string.IsNullOrWhiteSpace(value))
+    public static Emitter Line(this Emitter emitter, string value) =>
+        string.IsNullOrWhiteSpace(value) switch
         {
-            emitter.Tabs().Append(value);
-        }
-
-        return emitter.NewLine();
-    }
+            true  => emitter / unit,
+            false => emitter * value / unit
+        };
 
     /// <summary>
     /// Emit <paramref name="value"/> followed by two newlines.
@@ -180,28 +205,28 @@ internal static class EmitterExtensions
     /// <param name="emitter"></param>
     /// <param name="value"></param>
     /// <returns></returns>
-    public static IEmitter LineLine(this IEmitter emitter, string value) => emitter.Line(value).NewLine();
+    public static Emitter LineLine(this Emitter emitter, string value) => emitter * value / unit / unit;
 
     /// <summary>
     /// { -> newline -> indent
     /// </summary>
     /// <param name="emitter"></param>
     /// <returns></returns>
-    public static IEmitter OpenBrace(this IEmitter emitter) => emitter.Line("{").Indent();
+    public static Emitter OpenBrace(this Emitter emitter) => emitter * "{" / Increment;
 
     /// <summary>
     /// unindent -> } -> newline
     /// </summary>
     /// <param name="emitter"></param>
     /// <returns></returns>
-    public static IEmitter CloseBrace(this IEmitter emitter) => emitter.Unindent().Line("}");
+    public static Emitter CloseBrace(this Emitter emitter) => emitter * Decrement * "}" / unit;
 
     /// <summary>
     /// #nullable enable -> newline -> newline
     /// </summary>
     /// <param name="emitter"></param>
     /// <returns></returns>
-    public static IEmitter NullableDirective(this IEmitter emitter) => emitter.LineLine("#nullable enable");
+    public static Emitter NullableDirective(this Emitter emitter) => emitter * "#nullable enable" / unit / unit;
 
     /// <summary>
     /// Emits <paramref name="content"/> as a C# raw string literal.
@@ -210,9 +235,9 @@ internal static class EmitterExtensions
     /// <param name="emitter"></param>
     /// <param name="content">Text to emit.</param>
     /// <returns></returns>
-    public static IEmitter RawStringLiteral(this IEmitter emitter, string content)
+    public static Emitter RawStringLiteral(this Emitter emitter, string content)
     {
-        int GetRawStringQuotes(string text)
+        int CountQuotes(string text)
         {
             var count = 0;
             var currentCount = 0;
@@ -237,7 +262,7 @@ internal static class EmitterExtensions
             return Math.Max(3, count);
         }
 
-        return emitter.RawStringLiteral(GetRawStringQuotes(content), content);
+        return emitter.RawStringLiteral(CountQuotes(content), content);
     }
 
     /// <summary>
@@ -247,14 +272,10 @@ internal static class EmitterExtensions
     /// <param name="quotesCount">Number of quotation marks (") to use for the raw string literal.</param>
     /// <param name="content">Text to emit.</param>
     /// <returns></returns>
-    public static IEmitter RawStringLiteral(this IEmitter emitter, int quotesCount, string content)
+    public static Emitter RawStringLiteral(this Emitter emitter, int quotesCount, string content)
     {
         var quotes = new string('"', Math.Max(3, quotesCount));
 
-        return emitter.WithIndent(0, out var indent)
-                      .Line(quotes)
-                      .Line(content)
-                      .Line($"{quotes};")
-                      .WithIndent(indent);
+        return emitter * Scope.Enter(0) * quotes / content / quotes * ";" / Scope.Exit();
     }
 }

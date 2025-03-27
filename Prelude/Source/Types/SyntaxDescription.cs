@@ -1,5 +1,6 @@
 ﻿#nullable enable
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -47,24 +48,32 @@ internal record TypeIdentifierDescription : SyntaxDescription
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitTypeIdentifier(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitTypeIdentifier(this);
 
-    public static TypeIdentifierDescription Error => new()
-    {
-        Identifier = "MISSING", Kind = TypeIdentifierKind.Error
-    };
+    public static TypeIdentifierDescription Error => new() { Identifier = "?", Kind = TypeIdentifierKind.Error };
 }
 
 [DebuggerDisplay("{Modifiers}")]
-internal record ModifierListDescription : SyntaxDescription
+[CollectionBuilder(typeof(ModifierListDescription), nameof(Create))]
+internal record ModifierListDescription : SyntaxDescription, IEnumerable<string>
 {
     public required CacheArray<string> Modifiers { get; init; }
 
-    public static ModifierListDescription Empty => new()
-    {
-        Modifiers = []
-    };
+    public static ModifierListDescription Empty { get; } = [];
+
+    public static ModifierListDescription Create(ReadOnlySpan<string> items) =>
+        new() { Modifiers = items.ToImmutableArray().ToCacheArray() };
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitModifierList(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitModifierList(this);
+
+    public IEnumerator<string> GetEnumerator()
+    {
+        return ((IEnumerable<string>)Modifiers).GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IEnumerable)Modifiers).GetEnumerator();
+    }
 }
 
 [DebuggerDisplay("{Parameters}")]
@@ -72,10 +81,7 @@ internal record TypeParameterListDescription : SyntaxDescription
 {
     public required Option<string> Parameters { get; init; }
 
-    public static TypeParameterListDescription Empty => new()
-    {
-        Parameters = None
-    };
+    public static TypeParameterListDescription Empty => new() { Parameters = None };
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitTypeParameterList(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitTypeParameterList(this);
@@ -95,31 +101,53 @@ internal record ParameterDescription : SyntaxDescription
 }
 
 [DebuggerDisplay("{Parameters}")]
-internal record ParameterListDescription : SyntaxDescription
+[CollectionBuilder(typeof(ParameterListDescription), nameof(Create))]
+internal record ParameterListDescription : SyntaxDescription, IEnumerable<ParameterDescription>
 {
     public required CacheArray<ParameterDescription> Parameters { get; init; }
 
-    public static ParameterListDescription Empty => new()
-    {
-        Parameters = []
-    };
+    public static ParameterListDescription Empty { get; } = [];
+
+    public static ParameterListDescription Create(ReadOnlySpan<ParameterDescription> items) =>
+        new() { Parameters = items.ToImmutableArray().ToCacheArray() };
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitParameterList(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitParameterList(this);
+
+    public IEnumerator<ParameterDescription> GetEnumerator()
+    {
+        return ((IEnumerable<ParameterDescription>)Parameters).GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IEnumerable)Parameters).GetEnumerator();
+    }
 }
 
 [DebuggerDisplay("{Parameters}")]
-internal record BracketedParameterListDescription : SyntaxDescription
+[CollectionBuilder(typeof(BracketedParameterListDescription), nameof(Create))]
+internal record BracketedParameterListDescription : SyntaxDescription, IEnumerable<ParameterDescription>
 {
     public required CacheArray<ParameterDescription> Parameters { get; init; }
 
-    public static BracketedParameterListDescription Empty => new()
-    {
-        Parameters = []
-    };
+    public static BracketedParameterListDescription Empty { get; } = [];
+
+    public static BracketedParameterListDescription Create(ReadOnlySpan<ParameterDescription> items) =>
+        new() { Parameters = items.ToImmutableArray().ToCacheArray() };
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitBracketedParameterList(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitBracketedParameterList(this);
+
+    public IEnumerator<ParameterDescription> GetEnumerator()
+    {
+        return ((IEnumerable<ParameterDescription>)Parameters).GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IEnumerable)Parameters).GetEnumerator();
+    }
 }
 
 [DebuggerDisplay("{Modifiers}")]
@@ -160,28 +188,30 @@ internal record AccessorDescription : SyntaxDescription
 }
 
 [DebuggerDisplay("{Accessors}")]
-internal record AccessorListDescription : SyntaxDescription
+[CollectionBuilder(typeof(AccessorListDescription), nameof(Create))]
+internal record AccessorListDescription : SyntaxDescription, IEnumerable<AccessorDescription>
 {
     public required CacheArray<AccessorDescription> Accessors { get; init; }
 
-    public static AccessorListDescription Empty => new()
-    {
-        Accessors = []
-    };
+    public static AccessorListDescription Empty { get; } = [];
 
-    public static AccessorListDescription Getter => new()
-    {
-        Accessors =
-        [
-            new()
-            {
-                Keyword = "get"
-            }
-        ]
-    };
+    public static AccessorListDescription Getter => [new() { Keyword = "get" }];
+
+    public static AccessorListDescription Create(ReadOnlySpan<AccessorDescription> items) =>
+        new() { Accessors = items.ToImmutableArray().ToCacheArray() };
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitAccessorList(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitAccessorList(this);
+
+    public IEnumerator<AccessorDescription> GetEnumerator()
+    {
+        return ((IEnumerable<AccessorDescription>)Accessors).GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return ((IEnumerable)Accessors).GetEnumerator();
+    }
 }
 
 internal abstract record BasePropertyDescription : MemberDescription
@@ -221,12 +251,9 @@ internal record NamespaceDescription : MemberDescription
     public required CacheArray<MemberDescription> Members { get; init; }
 
     public NamespaceDescription WithMembers(params ReadOnlySpan<MemberDescription> members) =>
-        this with
-        {
-            Members = members.ToImmutableArray().ToCacheArray()
-        };
+        this with { Members = members.ToImmutableArray().ToCacheArray() };
 
-    public sealed override ModifierListDescription Modifiers { get; init; } = ModifierListDescription.Empty;
+    public sealed override ModifierListDescription Modifiers { get; init; } = [];
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitNamespace(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitNamespace(this);
@@ -246,10 +273,7 @@ internal record NamedTypeDescription : MemberDescription
     public required CacheArray<MemberDescription> Members { get; init; }
 
     public NamedTypeDescription WithMembers(params ReadOnlySpan<MemberDescription> members) =>
-        this with
-        {
-            Members = members.ToImmutableArray().ToCacheArray()
-        };
+        this with { Members = members.ToImmutableArray().ToCacheArray() };
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitNamedType(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitNamedType(this);
@@ -265,10 +289,7 @@ internal record ModuleDescription : MemberDescription
     public required CacheArray<MemberDescription> Members { get; init; }
 
     public ModuleDescription WithMembers(params ReadOnlySpan<MemberDescription> members) =>
-        this with
-        {
-            Members = members.ToImmutableArray().ToCacheArray()
-        };
+        this with { Members = members.ToImmutableArray().ToCacheArray() };
 
     public override Option<TResult> Accept<TResult>(SyntaxDescriptionVisitor<TResult> visitor) => visitor.VisitModule(this);
     public override Unit Accept(SyntaxDescriptionWalker visitor) => visitor.VisitModule(this);
@@ -277,10 +298,7 @@ internal record ModuleDescription : MemberDescription
 internal static class SyntaxHelper
 {
     public static ModifierListDescription ParseModifierList(SyntaxTokenList tokens) =>
-        new()
-        {
-            Modifiers = tokens.Select(x => x.ValueText).ToCacheArray()
-        };
+        new() { Modifiers = tokens.Select(x => x.ValueText).ToCacheArray() };
 
     public static SyntaxDescription WithMembers(this SyntaxDescription node, params ReadOnlySpan<MemberDescription> members)
     {
@@ -288,19 +306,10 @@ internal static class SyntaxHelper
 
         return node switch
         {
-            ModuleDescription description => description with
-            {
-                Members = ToArray(members)
-            },
-            NamespaceDescription description => description with
-            {
-                Members = ToArray(members)
-            },
-            NamedTypeDescription description => description with
-            {
-                Members = ToArray(members)
-            },
-            _ => throw new InvalidOperationException()
+            ModuleDescription description    => description with { Members = ToArray(members) },
+            NamespaceDescription description => description with { Members = ToArray(members) },
+            NamedTypeDescription description => description with { Members = ToArray(members) },
+            _                                => throw new InvalidOperationException()
         };
     }
 
@@ -332,10 +341,7 @@ internal abstract class BaseSyntaxVisitor : CSharpSyntaxVisitor<SyntaxDescriptio
         list.Select(Visit).OfType<TResult>().ToCacheArray();
 
     public override SyntaxDescription VisitUsingDirective(UsingDirectiveSyntax node) =>
-        new UsingDescription
-        {
-            Text = node.ToFullString().Trim()
-        };
+        new UsingDescription { Text = node.ToFullString().Trim() };
 
     public virtual SyntaxDescription VisitBaseNamespaceDeclarationSyntax(BaseNamespaceDeclarationSyntax node)
     {
@@ -357,10 +363,7 @@ internal abstract class BaseSyntaxVisitor : CSharpSyntaxVisitor<SyntaxDescriptio
 
     public override SyntaxDescription VisitCompilationUnit(CompilationUnitSyntax node)
     {
-        return new ModuleDescription
-        {
-            Usings = VisitSyntaxList<UsingDirectiveSyntax, UsingDescription>(node.Usings), IsTargetNode = false, Members = []
-        };
+        return new ModuleDescription { Usings = VisitSyntaxList<UsingDirectiveSyntax, UsingDescription>(node.Usings), IsTargetNode = false, Members = [] };
     }
 
     public virtual SyntaxDescription? VisitTypeDeclaration(TypeDeclarationSyntax node)
@@ -382,65 +385,39 @@ internal abstract class BaseSyntaxVisitor : CSharpSyntaxVisitor<SyntaxDescriptio
     public override SyntaxDescription? VisitRecordDeclaration(RecordDeclarationSyntax node) => VisitTypeDeclaration(node);
 
     public override SyntaxDescription VisitTypeParameterList(TypeParameterListSyntax node) =>
-        new TypeParameterListDescription
-        {
-            Parameters = node.ToFullString().Trim()
-        };
+        new TypeParameterListDescription { Parameters = node.ToFullString().Trim() };
 
     public override SyntaxDescription VisitParameterList(ParameterListSyntax node) =>
-        new ParameterListDescription
-        {
-            Parameters = node.Parameters.Select(Visit).OfType<ParameterDescription>().ToCacheArray()
-        };
+        new ParameterListDescription { Parameters = node.Parameters.Select(Visit).OfType<ParameterDescription>().ToCacheArray() };
 
     public override SyntaxDescription VisitBracketedParameterList(BracketedParameterListSyntax node) =>
-        new BracketedParameterListDescription
-        {
-            Parameters = node.Parameters.Select(Visit).OfType<ParameterDescription>().ToCacheArray()
-        };
+        new BracketedParameterListDescription { Parameters = node.Parameters.Select(Visit).OfType<ParameterDescription>().ToCacheArray() };
 
     public override SyntaxDescription VisitParameter(ParameterSyntax node) =>
-        new ParameterDescription
-        {
-            Identifier = node.Identifier.ValueText,
-            Type = (Visit(node.Type) as TypeIdentifierDescription).ToOption(),
-            Modifiers = SyntaxHelper.ParseModifierList(node.Modifiers)
-        };
+        new ParameterDescription { Identifier = node.Identifier.ValueText, Type = (Visit(node.Type) as TypeIdentifierDescription).ToOption(), Modifiers = SyntaxHelper.ParseModifierList(node.Modifiers) };
 
     public override SyntaxDescription VisitIdentifierName(IdentifierNameSyntax node) =>
-        new TypeIdentifierDescription
-        {
-            Identifier = node.Identifier.ValueText, Kind = TypeIdentifierKind.Identifier
-        };
+        new TypeIdentifierDescription { Identifier = node.Identifier.ValueText, Kind = TypeIdentifierKind.Identifier };
 
     public override SyntaxDescription VisitPredefinedType(PredefinedTypeSyntax node) =>
-        new TypeIdentifierDescription
-        {
-            Identifier = node.Keyword.ValueText, Kind = TypeIdentifierKind.Predefined
-        };
+        new TypeIdentifierDescription { Identifier = node.Keyword.ValueText, Kind = TypeIdentifierKind.Predefined };
 
     public override SyntaxDescription VisitAccessorList(AccessorListSyntax node) =>
-        new AccessorListDescription
-        {
-            Accessors = node.Accessors.Select(Visit).OfType<AccessorDescription>().ToCacheArray()
-        };
+        new AccessorListDescription { Accessors = node.Accessors.Select(Visit).OfType<AccessorDescription>().ToCacheArray() };
 
     public override SyntaxDescription VisitAccessorDeclaration(AccessorDeclarationSyntax node) =>
-        new AccessorDescription
-        {
-            Keyword = node.Keyword.ValueText
-        };
+        new AccessorDescription { Keyword = node.Keyword.ValueText };
 }
 
 internal sealed class ContextWalker : BaseSyntaxVisitor
 {
-    private Option<ModuleDescription> _module = None;
-    private readonly Queue<MemberDescription> _members = new();
+    private Option<ModuleDescription> module = None;
+    private readonly Queue<MemberDescription> members = new();
 
     public override SyntaxDescription VisitTypeDeclaration(TypeDeclarationSyntax node)
     {
         var self = (NamedTypeDescription)base.VisitTypeDeclaration(node)!;
-        _members.Enqueue(self);
+        members.Enqueue(self);
         Visit(node.Parent);
         return self;
     }
@@ -448,7 +425,7 @@ internal sealed class ContextWalker : BaseSyntaxVisitor
     public override SyntaxDescription VisitBaseNamespaceDeclarationSyntax(BaseNamespaceDeclarationSyntax node)
     {
         var self = (NamespaceDescription)base.VisitBaseNamespaceDeclarationSyntax(node);
-        _members.Enqueue(self);
+        members.Enqueue(self);
         Visit(node.Parent);
         return self;
     }
@@ -456,25 +433,25 @@ internal sealed class ContextWalker : BaseSyntaxVisitor
     public override SyntaxDescription VisitCompilationUnit(CompilationUnitSyntax node)
     {
         var root = (ModuleDescription)base.VisitCompilationUnit(node);
-        _module = root;
+        module = root;
         return root;
     }
 
     public Option<ModuleDescription> GetRoot(MemberDescription child)
     {
-        if (_module.IsNone)
+        if (module.IsNone)
         {
             return None;
         }
 
-        var current = (MemberDescription)_members.Dequeue().WithMembers(child);
+        var current = (MemberDescription)members.Dequeue().WithMembers(child);
 
-        while (_members.Count > 0 && _members.Dequeue() is { } member)
+        while (members.Count > 0 && members.Dequeue() is { } member)
         {
             current = (MemberDescription)member.WithMembers(current);
         }
 
-        return _module.UnsafeValue.WithMembers(current);
+        return module.UnsafeValue.WithMembers(current);
     }
 }
 
@@ -498,50 +475,38 @@ internal sealed record SyntaxToDescriptionWalkerConfiguration
     /// <summary>
     /// Includes all nested types, type members and context.
     /// </summary>
-    public static readonly SyntaxToDescriptionWalkerConfiguration All = new()
-    {
-        IncludeNestedTypes = true, IncludeTypeMembers = true, IncludeContext = true
-    };
+    public static readonly SyntaxToDescriptionWalkerConfiguration All = new() { IncludeNestedTypes = true, IncludeTypeMembers = true, IncludeContext = true };
 
     /// <summary>
     /// Doesn't include any nested types or type members, but still includes context.
     /// </summary>
-    public static readonly SyntaxToDescriptionWalkerConfiguration Context = new()
-    {
-        IncludeNestedTypes = false, IncludeTypeMembers = false, IncludeContext = true
-    };
+    public static readonly SyntaxToDescriptionWalkerConfiguration Context = new() { IncludeNestedTypes = false, IncludeTypeMembers = false, IncludeContext = true };
 
     /// <summary>
     /// Only includes the type passed to the Visit method, but not its members.
     /// </summary>
-    public static readonly SyntaxToDescriptionWalkerConfiguration Single = new()
-    {
-        IncludeContext = false, IncludeNestedTypes = false, IncludeTypeMembers = false
-    };
+    public static readonly SyntaxToDescriptionWalkerConfiguration Single = new() { IncludeContext = false, IncludeNestedTypes = false, IncludeTypeMembers = false };
 }
 
 internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration configuration) : BaseSyntaxVisitor
 {
-    private bool _includeContext = configuration.IncludeContext;
-    private bool _isTarget = true;
+    private bool includeContext = configuration.IncludeContext;
+    private bool isTarget = true;
 
     public Option<ModuleDescription> Context { get; private set; }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private SyntaxDescription UpdateContext(MemberDeclarationSyntax node, MemberDescription description)
     {
-        if (_isTarget)
+        if (isTarget)
         {
-            description = description with
-            {
-                IsTargetNode = true
-            };
-            _isTarget = false;
+            description = description with { IsTargetNode = true };
+            isTarget = false;
         }
 
-        if (!_includeContext) return description;
+        if (!includeContext) return description;
 
-        _includeContext = false;
+        includeContext = false;
         var walker = new ContextWalker();
         walker.Visit(node.Parent);
         Context = walker.GetRoot(description);
@@ -589,10 +554,7 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
             return members.ToCacheArray();
         }
 
-        var description = (NamedTypeDescription)base.VisitTypeDeclaration(node)! with
-        {
-            Members = VisitMembers()
-        };
+        var description = (NamedTypeDescription)base.VisitTypeDeclaration(node)! with { Members = VisitMembers() };
 
         return UpdateContext(node, description);
     }
@@ -610,7 +572,7 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
             ReturnType = (Visit(node.ReturnType) as TypeIdentifierDescription).ToOption(),
             Identifier = node.Identifier.ValueText,
             TypeParameterList = Visit(node.TypeParameterList) as TypeParameterListDescription ?? TypeParameterListDescription.Empty,
-            Parameters = Visit(node.ParameterList) as ParameterListDescription ?? ParameterListDescription.Empty,
+            Parameters = Visit(node.ParameterList) as ParameterListDescription ?? [],
             Arity = node.Arity
         };
 
@@ -646,7 +608,7 @@ internal class SyntaxToDescriptionWalker(SyntaxToDescriptionWalkerConfiguration 
         {
             Modifiers = SyntaxHelper.ParseModifierList(node.Modifiers),
             Type = (Visit(node.Type) as TypeIdentifierDescription).ToOption(),
-            Parameters = Visit(node.ParameterList) as BracketedParameterListDescription ?? BracketedParameterListDescription.Empty,
+            Parameters = Visit(node.ParameterList) as BracketedParameterListDescription ?? [],
             Accessors = Visit(node.AccessorList) as AccessorListDescription ?? AccessorListDescription.Getter
         };
 
@@ -721,7 +683,7 @@ internal class SyntaxDescriptionWalker
         Visit(description.Modifiers);
         Visit(description.Parameters);
         Visit(description.TypeParameterList);
-        description.ReturnType.Map(Visit);
+        Visit(description.ReturnType.DefaultValue(TypeIdentifierDescription.Error));
 
         return unit;
     }
@@ -742,7 +704,7 @@ internal class SyntaxDescriptionWalker
     {
         Visit(description.Modifiers);
         Visit(description.Accessors);
-        description.Type.Map(Visit);
+        Visit(description.Type.DefaultValue(TypeIdentifierDescription.Error));
 
         return unit;
     }
@@ -751,7 +713,7 @@ internal class SyntaxDescriptionWalker
     {
         Visit(description.Modifiers);
         Visit(description.Accessors);
-        description.Type.Map(Visit);
+        Visit(description.Type.DefaultValue(TypeIdentifierDescription.Error));
 
         return unit;
     }
@@ -791,26 +753,22 @@ internal class SyntaxDescriptionWalker
     }
 }
 
-internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWalker
+internal class SyntaxDescriptionEmitter(Emitter emitter) : SyntaxDescriptionWalker
 {
-    protected IEmitter Emitter { get; } = emitter;
+    protected Emitter Emitter { get; } = emitter;
 
-    public SyntaxDescriptionEmitter() : this(new StandardEmitter()) { }
+    public SyntaxDescriptionEmitter() : this(new()) { }
 
     public override Unit VisitTypeIdentifier(TypeIdentifierDescription description)
     {
-        Emitter.Append(description.Identifier)
-               .Append(" ");
-
-        return unit;
+        return Emitter * description.Identifier * " " >> unit;
     }
 
     public override Unit VisitModifierList(ModifierListDescription description)
     {
-        Emitter.Tabs();
         foreach (var modifier in description.Modifiers)
         {
-            Emitter.Append(modifier).Append(" ");
+            _ = Emitter * modifier * " ";
         }
 
         return unit;
@@ -823,18 +781,13 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
             return unit;
         }
 
-        Emitter
-            // .Append("<")
-            .Append(description.Parameters.UnsafeValue);
-        // .Append(">");
-        return unit;
+        return Emitter * description.Parameters.UnsafeValue >> unit;
     }
 
     public override Unit VisitParameter(ParameterDescription description)
     {
         base.VisitParameter(description);
-        Emitter.Append(description.Identifier);
-        return unit;
+        return Emitter * description.Identifier >> unit;
     }
 
     public override Unit VisitParameterList(ParameterListDescription description)
@@ -852,9 +805,7 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
             }
         }
 
-        Emitter.Append(")");
-
-        return unit;
+        return Emitter * ")" >> unit;
     }
 
     public override Unit VisitBracketedParameterList(BracketedParameterListDescription description)
@@ -872,17 +823,12 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
             }
         }
 
-        Emitter.Append("]");
-
-        return unit;
+        return Emitter * "]" >> unit;
     }
 
     public virtual Unit VisitMethodBody(MethodDescription description)
     {
-        return Emitter.NewLine()
-                      .OpenBrace()
-                      .CloseBrace()
-                      .Ignore();
+        return Emitter * "{" / "}" / unit >> unit;
     }
 
     public override Unit VisitMethod(MethodDescription description)
@@ -898,7 +844,7 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
     }
 
     public override Unit VisitAccessor(AccessorDescription description) =>
-        Emitter.Append(description.Keyword).Append(";").Ignore();
+        Emitter * description.Keyword * ";" >> unit;
 
     public override Unit VisitAccessorList(AccessorListDescription description)
     {
@@ -909,15 +855,13 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
             Emitter.Append(" ");
         }
 
-        Emitter.Append("}");
-
-        return unit;
+        return Emitter.Append("}") >> unit;
     }
 
     public override Unit VisitProperty(PropertyDescription description)
     {
         Visit(description.Modifiers);
-        description.Type.Map(Visit);
+        Visit(description.Type.DefaultValue(TypeIdentifierDescription.Error));
         Emitter.Append(description.Identifier).Append(" ");
         Visit(description.Accessors);
         Emitter.NewLine();
@@ -928,7 +872,7 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
     public override Unit VisitIndexer(IndexerDescription description)
     {
         Visit(description.Modifiers);
-        description.Type.Map(Visit);
+        Visit(description.Type.DefaultValue(TypeIdentifierDescription.Error));
         Emitter.Append("this");
         Visit(description.Parameters);
         Emitter.Append(" ");
@@ -943,12 +887,9 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
     public override Unit VisitNamedType(NamedTypeDescription description)
     {
         Visit(description.Modifiers);
-        Emitter.Append(description.Keyword)
-               .Append(" ")
-               .Append(description.Identifier);
+        _ = Emitter * description.Keyword * " " * description.Identifier;
         Visit(description.TypeParameters);
-        Emitter.NewLine()
-               .OpenBrace();
+        _ = Emitter / "{" / Indent.Increment;
 
         VisitNamedTypeBody(description);
         foreach (var member in description.Members)
@@ -966,7 +907,7 @@ internal class SyntaxDescriptionEmitter(IEmitter emitter) : SyntaxDescriptionWal
         Emitter.Tabs().Append("namespace ").Append(description.Name);
         _ = description.IsFileScoped switch
         {
-            true => Emitter.LineLine(";"),
+            true  => Emitter.LineLine(";"),
             false => Emitter.NewLine().OpenBrace()
         };
 

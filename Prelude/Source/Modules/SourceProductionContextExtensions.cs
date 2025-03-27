@@ -1,20 +1,19 @@
-﻿using System.Text;
-using Microsoft.CodeAnalysis;
+﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 
 namespace Kehlet.SourceGenerator;
 
 internal static class SourceProductionContextExtensions
 {
-    public static Unit AddSourceUTF8(this SourceProductionContext context, string hintName, string source)
+    public static SourceProductionContext AddSource(this SourceProductionContext context, string hintName, string source)
     {
-        context.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
-        return unit;
+        context.AddSource(hintName, source);
+        return context;
     }
 
-    public static Unit AddSourceUTF8(this SourceProductionContext context, string hintName, IEmitter emitter)
+    public static SourceProductionContext AddSource(this SourceProductionContext context, string hintName, SourceText source)
     {
-        context.AddSource(hintName, SourceText.From(emitter.ToString(), Encoding.UTF8));
-        return unit;
+        context.AddSource(hintName, source);
+        return context;
     }
 }

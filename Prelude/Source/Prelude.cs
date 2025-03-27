@@ -1,5 +1,6 @@
 ﻿#if !NO_GLOBAL_USINGS
 global using Kehlet.SourceGenerator;
+
 global using static Kehlet.SourceGenerator.Prelude;
 #endif
 using System;
@@ -33,4 +34,5 @@ internal static class PreludeExtensions
     public static ResultOk<T> Ok<T>(this T value) => new(value);
     public static ResultError<T> Error<T>(this T error) => new(error);
     public static Unit Ignore<T>(this T self) => unit;
+    public static TResult Apply<T, TResult>(this T self, Func<T, TResult> f) => f(self);
 }

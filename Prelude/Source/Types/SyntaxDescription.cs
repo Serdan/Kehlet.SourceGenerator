@@ -828,7 +828,7 @@ internal class SyntaxDescriptionEmitter(Emitter emitter) : SyntaxDescriptionWalk
 
     public virtual Unit VisitMethodBody(MethodDescription description)
     {
-        return Emitter * "{" / "}" / unit >> unit;
+        return Emitter * " { }" / unit >> unit;
     }
 
     public override Unit VisitMethod(MethodDescription description)

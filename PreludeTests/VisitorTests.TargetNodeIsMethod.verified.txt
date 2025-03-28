@@ -6,7 +6,5 @@ namespace Everything.Something;
 
 public partial class MyClass<T, U>
 {
-    public partial int Main<T>(T value, string str)
-    {
-    }
+    public partial int Main<T>(T value, string str) { }
 }

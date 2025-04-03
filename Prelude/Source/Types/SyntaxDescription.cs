@@ -306,10 +306,10 @@ internal static class SyntaxHelper
 
         return node switch
         {
-            ModuleDescription description    => description with { Members = ToArray(members) },
+            ModuleDescription description => description with { Members = ToArray(members) },
             NamespaceDescription description => description with { Members = ToArray(members) },
             NamedTypeDescription description => description with { Members = ToArray(members) },
-            _                                => throw new InvalidOperationException()
+            _ => throw new InvalidOperationException()
         };
     }
 
@@ -907,7 +907,7 @@ internal class SyntaxDescriptionEmitter(Emitter emitter) : SyntaxDescriptionWalk
         Emitter.Append("namespace ").Append(description.Name);
         _ = description.IsFileScoped switch
         {
-            true  => Emitter.LineLine(";"),
+            true => Emitter.LineLine(";"),
             false => Emitter.NewLine().OpenBrace()
         };
 
@@ -936,13 +936,20 @@ internal class SyntaxDescriptionEmitter(Emitter emitter) : SyntaxDescriptionWalk
 
     public override Unit VisitUsing(UsingDescription description) => Emitter.Line(description.Text).Ignore();
 
+    public virtual Unit VisitUsingsList(CacheArray<UsingDescription> usings)
+    {
+        foreach (var @using in usings)
+        {
+            Visit(@using);
+        }
+
+        return unit;
+    }
+
     public override Unit VisitModule(ModuleDescription description)
     {
         Emitter.NullableDirective();
-        foreach (var @using in description.Usings)
-        {
-            Visit(@using); // Add a VisitUsings, so it's easier to append usings
-        }
+        VisitUsingsList(description.Usings);
 
         if (description.Usings.Count > 0)
         {

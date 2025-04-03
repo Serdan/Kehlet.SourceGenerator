@@ -22,7 +22,7 @@ internal readonly struct Indent
     {
         0 => emitter.WithIndent(emitter.CurrentIndent + value),
         1 => emitter.WithIndent(value),
-        _ => throw new ArgumentOutOfRangeException()
+        _ => throw new ArgumentOutOfRangeException($"Impossible DU state: {tag}")
     };
 
     public static Indent Delta(int value) => new(0, value);
@@ -46,7 +46,7 @@ internal readonly struct Scope
     {
         0 => emitter.EnterScope(indent),
         1 => emitter.ExitScope(),
-        _ => throw new ArgumentOutOfRangeException()
+        _ => throw new ArgumentOutOfRangeException($"Impossible DU state: {tag}")
     };
 
     public static Scope Enter(int indent) => new(0, indent);
@@ -72,6 +72,16 @@ internal class Emitter(StringBuilder builder)
             currentIndent = Math.Max(0, value);
             TabsPending = true;
         }
+    }
+
+    /// <summary>
+    /// Increase indent when appending exactly "{". Decrease indent when appending exactly "}".
+    /// </summary>
+    public bool AutoIndentOnBrace { get; set; } = false;
+    public Emitter WithAutoIndentOnBrace(bool value)
+    {
+        AutoIndentOnBrace = value;
+        return this;
     }
 
     public virtual string TabString => DefaultTabString;
@@ -109,7 +119,7 @@ internal class Emitter(StringBuilder builder)
 
         for (var i = 0; i < currentIndent; i++)
         {
-            Append(TabString);
+            builder.Append(TabString);
         }
 
         TabsPending = false;
@@ -117,13 +127,24 @@ internal class Emitter(StringBuilder builder)
     }
 
     /// <summary>
-    /// Raw append. Ignores indent.
+    /// Append pending tabs and value
     /// </summary>
     /// <param name="value"></param>
     /// <returns></returns>
     public virtual Emitter Append(string value)
     {
+        if (AutoIndentOnBrace && value is "}")
+        {
+            CurrentIndent--;
+        }
+
+        Tabs();
         builder.Append(value);
+        if (AutoIndentOnBrace && value is "{")
+        {
+            CurrentIndent++;
+        }
+
         return this;
     }
 
@@ -150,18 +171,20 @@ internal class Emitter(StringBuilder builder)
 
     public override string ToString() => builder.ToString();
 
-    public static Emitter operator *(Emitter emitter, string text) => emitter.Tabs().Append(text);
+    public static Emitter operator *(Emitter emitter, string text) => emitter.Append(text);
     public static Emitter operator *(Emitter emitter, Indent indent) => indent.Apply(emitter);
     public static Emitter operator *(Emitter emitter, Scope scope) => scope.Apply(emitter);
     public static Emitter operator *(Emitter emitter, Func<Emitter, Emitter> f) => emitter.Call(f);
-    public static Unit operator >> (Emitter emitter, Unit _) => unit;
+    public static Emitter operator *(Emitter emitter, Func<Emitter, Unit> f) => emitter.Call(e => f(e).Apply(_ => e));
     public static Emitter operator /(Emitter emitter, string text) => emitter.NewLine() * text;
     public static Emitter operator /(Emitter emitter, Unit unit) => emitter.NewLine();
     public static Emitter operator /(Emitter emitter, Indent indent) => emitter.NewLine() * indent;
     public static Emitter operator /(Emitter emitter, Scope scope) => emitter.NewLine() * scope;
     public static Emitter operator /(Emitter emitter, Func<Emitter, Emitter> f) => emitter.NewLine() * f;
+    public static Emitter operator /(Emitter emitter, Func<Emitter, Unit> f) => emitter.NewLine() * f;
     public static Emitter operator ++(Emitter emitter) => emitter.Indent();
     public static Emitter operator --(Emitter emitter) => emitter.Unindent();
+    public static Unit operator >>(Emitter emitter, Unit _) => unit;
 }
 
 internal static class EmitterExtensions
@@ -195,7 +218,7 @@ internal static class EmitterExtensions
     public static Emitter Line(this Emitter emitter, string value) =>
         string.IsNullOrWhiteSpace(value) switch
         {
-            true  => emitter / unit,
+            true => emitter / unit,
             false => emitter * value / unit
         };
 
@@ -237,7 +260,7 @@ internal static class EmitterExtensions
     /// <returns></returns>
     public static Emitter RawStringLiteral(this Emitter emitter, string content)
     {
-        int CountQuotes(string text)
+        static int CountQuotes(string text)
         {
             var count = 0;
             var currentCount = 0;

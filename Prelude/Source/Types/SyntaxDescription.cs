@@ -904,7 +904,7 @@ internal class SyntaxDescriptionEmitter(Emitter emitter) : SyntaxDescriptionWalk
 
     public override Unit VisitNamespace(NamespaceDescription description)
     {
-        Emitter.Tabs().Append("namespace ").Append(description.Name);
+        Emitter.Append("namespace ").Append(description.Name);
         _ = description.IsFileScoped switch
         {
             true  => Emitter.LineLine(";"),
@@ -941,7 +941,7 @@ internal class SyntaxDescriptionEmitter(Emitter emitter) : SyntaxDescriptionWalk
         Emitter.NullableDirective();
         foreach (var @using in description.Usings)
         {
-            Visit(@using);
+            Visit(@using); // Add a VisitUsings, so it's easier to append usings
         }
 
         if (description.Usings.Count > 0)

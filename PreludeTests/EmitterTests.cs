@@ -8,12 +8,7 @@ public class EmitterTests
         var text = Emitter.Create().RawStringLiteral(""""" """" """"").ToString();
 
         const string expected =
-            """"""
-            """""
-             """" 
-            """"";
-
-            """""";
+            "\"\"\"\"\"\r\n \"\"\"\" \r\n\"\"\"\"\";\r\n";
 
         Assert.Equal(expected, text);
     }
@@ -52,6 +47,27 @@ public class EmitterTests
             """;
                 // test
             """";
+
+        Assert.Equal(expected, result.ToString());
+    }
+
+    [Fact]
+    public void AutoIndentOnBrace()
+    {
+        var emitter = Emitter.Create().WithAutoIndentOnBrace(true);
+
+        var result =
+            emitter * "public class Test"
+                    / "{"
+                        / "// Hey there"
+                    / "}";
+
+        var expected = """
+            public class Test
+            {
+                // Hey there
+            }
+            """;
 
         Assert.Equal(expected, result.ToString());
     }

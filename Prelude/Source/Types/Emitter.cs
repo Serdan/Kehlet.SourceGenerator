@@ -235,14 +235,14 @@ internal static class EmitterExtensions
     /// </summary>
     /// <param name="emitter"></param>
     /// <returns></returns>
-    public static Emitter OpenBrace(this Emitter emitter) => emitter * "{" / Increment;
+    public static Emitter OpenBrace(this Emitter emitter) => emitter * "{ " / Increment;
 
     /// <summary>
     /// unindent -> } -> newline
     /// </summary>
     /// <param name="emitter"></param>
     /// <returns></returns>
-    public static Emitter CloseBrace(this Emitter emitter) => emitter * Decrement * "}" / unit;
+    public static Emitter CloseBrace(this Emitter emitter) => emitter * Decrement * "} " / unit;
 
     /// <summary>
     /// #nullable enable -> newline -> newline

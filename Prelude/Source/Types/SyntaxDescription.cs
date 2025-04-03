@@ -855,7 +855,7 @@ internal class SyntaxDescriptionEmitter(Emitter emitter) : SyntaxDescriptionWalk
             Emitter.Append(" ");
         }
 
-        return Emitter.Append("}") >> unit;
+        return Emitter.Append("} ") >> unit;
     }
 
     public override Unit VisitProperty(PropertyDescription description)
@@ -889,7 +889,7 @@ internal class SyntaxDescriptionEmitter(Emitter emitter) : SyntaxDescriptionWalk
         Visit(description.Modifiers);
         _ = Emitter * description.Keyword * " " * description.Identifier;
         Visit(description.TypeParameters);
-        _ = Emitter / "{" / Indent.Increment;
+        _ = Emitter / "{ " / Indent.Increment;
 
         VisitNamedTypeBody(description);
         foreach (var member in description.Members)
